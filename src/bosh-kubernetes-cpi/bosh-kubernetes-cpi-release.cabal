@@ -3,8 +3,8 @@ version:             0.0.1.0
 synopsis:            A BOSH Cloud Provider Interface for Kubernetes
 description:         Please see README.md
 homepage:            https://github.com/SAP/bosh-kubernetes-cpi-release#readme
-license:             BSD3
--- license-file:        LICENSE
+license:             Apache
+license-file:        LICENSE
 author:              Jan von Löwenstein
 maintainer:          jan.von.loewenstein@sap.com
 copyright:           2016 SAP SE
