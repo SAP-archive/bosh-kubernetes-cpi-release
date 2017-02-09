@@ -1,0 +1,9 @@
+[submodule "src/bosh-kubernetes-cpi/forks/haskell-kubernetes"]
+	path = src/bosh-kubernetes-cpi/forks/haskell-kubernetes
+	url = git@github.com:loewenstein/haskell-kubernetes.git
+[submodule "src/bosh-kubernetes-cpi/forks/logging-effects"]
+	path = src/bosh-kubernetes-cpi/forks/logging-effects
+	url = git@github.com:ocharles/logging-effect.git
+[submodule "src/bosh-kubernetes-cpi/forks/haskell-bosh-cpi"]
+	path = src/bosh-kubernetes-cpi/forks/haskell-bosh-cpi
+	url = git@github.wdf.sap.corp:d043856/haskell-bosh-cpi.git

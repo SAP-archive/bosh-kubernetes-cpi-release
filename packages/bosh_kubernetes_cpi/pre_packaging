@@ -1,0 +1,20 @@
+# abort script on any command that exits with a non zero value
+set -e
+
+# DEPENDENCIES=$RELEASE_DIR/blobs/bosh_kubernetes_cpi/dependencies
+#
+# pushd bosh-kubernetes-cpi
+#   STACK_ROOT=$DEPENDENCIES stack build --prefetch --dry-run
+# popd
+#
+# tar -czvf $RELEASE_DIR/blobs/bosh_kubernetes_cpi/dependencies.source.tgz $DEPENDENCIES
+
+# pushd $RELEASE_DIR
+#   stack build
+#   DARWIN_BIN_FOLDER=.stack-work/install/x86_64-osx/lts-7.8/8.0.1/bin
+#   tar -cf blobs/bosh-kubernetes-cpi/bosh_kubernetes_cpi_darwin.tgz -C $DARWIN_BIN_FOLDER bosh-kubernetes-cpi
+#
+#   stack build --docker
+#   LINUX_BIN_FOLDER=.stack-work/install/x86_64-linux-dkda49f7ca9b244180d3cfb1987cbc9743/lts-7.8/8.0.1/bin
+#   tar -cfv blobs/bosh-kubernetes-cpi/bosh_kubernetes_cpi_linux.tgz -C $LINUX_BIN_FOLDER bosh-kubernetes-cpi
+# popd

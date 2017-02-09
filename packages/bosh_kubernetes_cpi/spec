@@ -1,0 +1,14 @@
+---
+name: bosh_kubernetes_cpi
+
+dependencies:
+  - stack
+
+files:
+  - bosh_kubernetes_cpi/dependencies.source.tgz
+  - bosh-kubernetes-cpi/app/**/*
+  - bosh-kubernetes-cpi/src/**/*
+  - bosh-kubernetes-cpi/forks/**/*
+  - bosh-kubernetes-cpi/*.cabal
+  - bosh-kubernetes-cpi/Setup.hs
+  - bosh-kubernetes-cpi/stack.yaml
