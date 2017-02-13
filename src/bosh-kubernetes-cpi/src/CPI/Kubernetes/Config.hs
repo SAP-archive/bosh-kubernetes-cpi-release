@@ -12,6 +12,7 @@ import qualified CPI.Base               as Base
 
 import           Control.Monad.Catch
 import           Data.Aeson.Types
+import           Data.ByteString        (ByteString)
 import qualified Data.ByteString        as BS
 import           Data.Text              (Text)
 import qualified Data.Text              as Text
@@ -21,9 +22,9 @@ import           GHC.Generics
 import           Network.TLS
 import qualified Servant.Common.BaseUrl as Url
 
-parseConfig :: (MonadThrow m) => Text -> m Config
+parseConfig :: ByteString -> IO Config
 parseConfig input = do
-  rawConfig <- readConfig (encodeUtf8 input)
+  rawConfig <- readConfig input
   apiEndpoint <- Url.parseBaseUrl $ Text.unpack $ _apiEndpoint rawConfig
   creds <- readCredential
               (encodeUtf8 (_certificate . _credentials $ rawConfig))

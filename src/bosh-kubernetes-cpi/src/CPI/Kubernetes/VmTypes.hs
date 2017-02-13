@@ -12,7 +12,6 @@ import           Control.Monad.Except
 import           Control.Monad.Log
 import           Control.Monad.Reader
 import           CPI.Base                        (VmProperties)
-import           CPI.Base.Networks
 import           Data.Aeson
 import           Data.Aeson.Lens
 import           Data.Maybe

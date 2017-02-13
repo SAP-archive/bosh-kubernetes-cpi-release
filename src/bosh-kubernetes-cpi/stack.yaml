@@ -38,7 +38,8 @@ resolver: lts-7.13
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - '.'
-# - 'forks/halskell-bosh-cpi'
+- location: 'forks/haskell-bosh-cpi'
+  extra-dep: true
 - location: 'forks/haskell-kubernetes'
   extra-dep: true
 # - location: 'forks/logging-effect'
@@ -50,8 +51,7 @@ extra-deps: [pem-0.2.2, tls-extra-0.6.1, logging-effect-1.1.1, http-client-0.5.5
 # Override default flag values for local packages and extra-deps
 flags: {}
 
-ghc-options:
-  "*": -Wall
+ghc-options: {}
 # Extra package databases containing global packages
 extra-package-dbs: []
 

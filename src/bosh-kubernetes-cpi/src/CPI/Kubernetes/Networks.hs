@@ -1,23 +1,21 @@
-{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE InstanceSigs      #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE FlexibleContexts #-}
 module CPI.Kubernetes.Networks() where
 
-import Data.Aeson
-import Data.Aeson.Lens
-import CPI.Base.Networks
-import Data.Text (Text)
 import           Control.Lens
 import           Control.Monad.Catch
 import           Control.Monad.Except
-import           Control.Monad.Reader
 import           Control.Monad.Log
+import           Control.Monad.Reader
+import           Data.Aeson
+import           Data.Aeson.Lens
+import           Data.Text            (Text)
 
-configure :: (MonadIO m, MonadThrow m, MonadLog Text m) =>
-                NetworkSpec
-             -> m ()
-configure (NetworkSpec netSpec) = undefined
+-- configure :: (MonadIO m, MonadThrow m, MonadLog Text m) =>
+--                 NetworkSpec
+--              -> m ()
+-- configure (NetworkSpec netSpec) = undefined
 
 createServiceSpec :: Value -> [Value]
 createServiceSpec netSpec = netSpec ^.. (vipNetworks . cloudProperties)

@@ -1,6 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 module CPI.Kubernetes.Secrets(
   modifySettings
+  , withBase64
 ) where
 
 import           CPI.Base               as Base

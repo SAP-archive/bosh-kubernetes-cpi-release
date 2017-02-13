@@ -8,4 +8,4 @@ import qualified CPI.Base       as Base
 import qualified CPI.Kubernetes as Kubernetes
 
 main :: IO ()
-main = Base.run (Base.handleRequest :: Base.Request -> Base.CpiMonad Kubernetes.Config Base.Response)
+main = Base.runRequest (Base.handleRequest :: Base.Request -> Base.Cpi Kubernetes.Config IO Base.Response)

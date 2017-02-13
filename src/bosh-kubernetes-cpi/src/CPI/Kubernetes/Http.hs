@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module CPI.Kubernetes.Http(
     createPod
@@ -56,6 +57,46 @@ import qualified Network.HTTP.Types.Status as Http
 import           Network.HTTP.Client.TLS
 import           System.IO
 import Data.IORef
+import           Data.Text                      (Text)
+import           Network.Connection
+import           Network.HTTP.Client
+import           Network.HTTP.Client.TLS
+import           Network.TLS
+import           Network.TLS.Extra.Cipher
+import           Data.Default.Class
+import           Data.X509
+import qualified Servant.Common.BaseUrl         as Url
+
+instance MonadIO (Base.Cpi Config IO) where
+  liftIO = lift
+
+tlsSettings :: Url.BaseUrl -> Credential -> TLSSettings
+tlsSettings serverUrl clientCredentials =
+  let
+    baseParams = clientParams serverUrl
+    -- TODO should we not hand out our creds for any particular input?
+    onCertificateRequest :: ([CertificateType], Maybe [HashAndSignatureAlgorithm], [DistinguishedName]) -> IO (Maybe (CertificateChain, PrivKey))
+    onCertificateRequest x = do
+      return $ Just clientCredentials
+
+    -- TODO we should actually check for a valid cert according to our custom ca cert.
+    onServerCertificate _ _ _ _ = do
+      return []
+    in
+      TLSSettings (baseParams {clientHooks=def {onCertificateRequest=onCertificateRequest, onServerCertificate=onServerCertificate}})
+
+clientParams :: Url.BaseUrl -> ClientParams
+clientParams serverUrl =
+  ClientParams {
+    clientUseMaxFragmentLength = def,
+    clientServerIdentification = (Url.baseUrlHost serverUrl, undefined),
+    clientUseServerNameIndication = False,
+    clientWantSessionResume = def,
+    clientShared = def,
+    clientHooks = def,
+    clientSupported = def {supportedCiphers=ciphersuite_all},
+    clientDebug = def
+  }
 
 type NamespacedF model =
         Text
@@ -63,17 +104,17 @@ type NamespacedF model =
      -> Url.BaseUrl
      -> Servant.ClientM model
 
-namespacedF :: (MonadIO m, MonadThrow m, MonadReader Config m, MonadLog Text m) =>
+namespacedF :: (MonadIO m, MonadThrow m, MonadReader Config m, MonadLog (WithSeverity Text) m) =>
              NamespacedF model
           -> m model
 namespacedF f = do
   config <- ask
   result <- let
     baseUrl = apiEndpoint config
-    tlsSettings = Base.tlsSettings baseUrl (credentials config)
+    settings = tlsSettings baseUrl (credentials config)
     kubeNamespace = namespace config
     in do
-      manager <- liftIO $ newManager $ (mkManagerSettings tlsSettings Nothing)
+      manager <- liftIO $ newManager $ (mkManagerSettings settings Nothing)
                                         {
                                             managerModifyResponse = logResponse
                                           , managerModifyRequest = \req -> do
@@ -113,7 +154,7 @@ showResponse res body =
     , "}"
     ]
 
-namespacedGetter :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog Text m) =>
+namespacedGetter :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog (WithSeverity Text) m) =>
              NamespacedF model
           -> m (Maybe model)
 namespacedGetter f = do
@@ -129,96 +170,96 @@ namespacedGetter f = do
     } -> Nothing
     Left servantError -> throwM servantError
 
-createPod :: (MonadIO m, MonadThrow m, MonadReader Config m, MonadLog Text m) =>
+createPod :: (MonadIO m, MonadThrow m, MonadReader Config m, MonadLog (WithSeverity Text) m) =>
      Pod.Pod
   -> m Pod.Pod
 createPod pod = do
-  logMessage $ "Creating pod '" <> (Text.Encoding.decodeUtf8.toStrict.encode) pod <> "'"
+  logDebug $ "Creating pod '" <> (Text.Encoding.decodeUtf8.toStrict.encode) pod <> "'"
   namespacedF $ \namespace -> Kube.createNamespacedPod namespace Nothing pod
 
-getPod :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog Text m) =>
+getPod :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog (WithSeverity Text) m) =>
      Text
   -> m (Maybe Pod.Pod)
 getPod name = do
-  logMessage $ "Looking up pod '" <> name <> "'"
+  logDebug $ "Looking up pod '" <> name <> "'"
   namespacedGetter $ \namespace -> Kube.readNamespacedPod namespace name Nothing Nothing Nothing
 
-hasPod :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog Text m) =>
+hasPod :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog (WithSeverity Text) m) =>
      Text
   -> m Bool
 hasPod name = do
   result <- getPod name
   return $ isJust result
 
-deletePod :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog Text m) =>
+deletePod :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog (WithSeverity Text) m) =>
     Text
   -> m Pod.Pod
 deletePod name = do
-  logMessage $ "Deleting pod '" <> name <> "'"
+  logDebug $ "Deleting pod '" <> name <> "'"
   namespacedF $ \namespace -> Kube.deleteNamespacedPod namespace name Nothing (DeleteOptions.mkDeleteOptions 0)
 
-createSecret :: (MonadIO m, MonadThrow m, MonadReader Config m, MonadLog Text m) =>
+createSecret :: (MonadIO m, MonadThrow m, MonadReader Config m, MonadLog (WithSeverity Text) m) =>
      Secret.Secret
   -> m Secret.Secret
 createSecret secret = do
-  logMessage $ "Creating secret '" <> (Text.Encoding.decodeUtf8.toStrict.encode) secret <> "'"
+  logDebug $ "Creating secret '" <> (Text.Encoding.decodeUtf8.toStrict.encode) secret <> "'"
   namespacedF $ \namespace -> Kube.createNamespacedSecret namespace Nothing secret
 
-listSecret :: (MonadIO m, MonadThrow m, MonadReader Config m, MonadLog Text m) =>
+listSecret :: (MonadIO m, MonadThrow m, MonadReader Config m, MonadLog (WithSeverity Text) m) =>
      Text
   -> m SecretList.SecretList
 listSecret labelSelector = namespacedF $ \namespace -> Kube.listNamespacedSecret namespace Nothing (Just labelSelector) Nothing Nothing Nothing Nothing
 
-updateSecret :: (MonadIO m, MonadThrow m, MonadReader Config m, MonadLog Text m) =>
+updateSecret :: (MonadIO m, MonadThrow m, MonadReader Config m, MonadLog (WithSeverity Text) m) =>
        Secret.Secret
     -> m Secret.Secret
 updateSecret secret = do
-  logMessage $ "Updating secret '" <> (Text.Encoding.decodeUtf8.toStrict.encode) secret <> "'"
+  logDebug $ "Updating secret '" <> (Text.Encoding.decodeUtf8.toStrict.encode) secret <> "'"
   namespacedF $ \namespace -> Kube.replaceNamespacedSecret namespace (secret ^. Secret.metadata._Just.ObjectMeta.name._Just) Nothing secret
 
-createService :: (MonadIO m, MonadThrow m, MonadReader Config m, MonadLog Text m) =>
+createService :: (MonadIO m, MonadThrow m, MonadReader Config m, MonadLog (WithSeverity Text) m) =>
      Service.Service
   -> m Service.Service
 createService service = do
-  logMessage $ "Creating service '" <> (Text.Encoding.decodeUtf8.toStrict.encode) service <> "'"
+  logDebug $ "Creating service '" <> (Text.Encoding.decodeUtf8.toStrict.encode) service <> "'"
   namespacedF $ \namespace -> Kube.createNamespacedService namespace Nothing service
 
-listService :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog Text m) =>
+listService :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog (WithSeverity Text) m) =>
      Text
   -> m ServiceList.ServiceList
 listService labelSelector = namespacedF $ \namespace -> Kube.listNamespacedService namespace Nothing (Just labelSelector) Nothing Nothing Nothing Nothing
 
-deleteService :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog Text m) =>
+deleteService :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog (WithSeverity Text) m) =>
      Text
   -> m Status.Status
 deleteService name = do
-  logMessage $ "Deleting service '" <> name <> "'"
+  logDebug $ "Deleting service '" <> name <> "'"
   namespacedF $ \namespace -> Kube.deleteNamespacedService namespace name Nothing
 
-createPersistentVolumeClaim :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog Text m) =>
+createPersistentVolumeClaim :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog (WithSeverity Text) m) =>
      PersistentVolumeClaim.PersistentVolumeClaim
   -> m PersistentVolumeClaim.PersistentVolumeClaim
 createPersistentVolumeClaim claim = do
-  logMessage $ "Creating persistent volume claim '" <> (Text.Encoding.decodeUtf8.toStrict.encode) claim <> "'"
+  logDebug $ "Creating persistent volume claim '" <> (Text.Encoding.decodeUtf8.toStrict.encode) claim <> "'"
   namespacedF $ \namespace -> Kube.createNamespacedPersistentVolumeClaim namespace Nothing claim
 
-getPersistentVolumeClaim :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog Text m) =>
+getPersistentVolumeClaim :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog (WithSeverity Text) m) =>
      Text
   -> m (Maybe PersistentVolumeClaim.PersistentVolumeClaim)
 getPersistentVolumeClaim name = do
-  logMessage $ "Looking up persistent volume claim '" <> name <> "'"
+  logDebug $ "Looking up persistent volume claim '" <> name <> "'"
   namespacedGetter $ \namespace -> Kube.readNamespacedPersistentVolumeClaim namespace name Nothing Nothing Nothing
 
-hasPersistentVolumeClaim :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog Text m) =>
+hasPersistentVolumeClaim :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog (WithSeverity Text) m) =>
      Text
   -> m Bool
 hasPersistentVolumeClaim name = do
   result <- getPersistentVolumeClaim name
   return $ isJust result
 
-deletePersistentVolumeClaim :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog Text m) =>
+deletePersistentVolumeClaim :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog (WithSeverity Text) m) =>
      Text
   -> m Status.Status
 deletePersistentVolumeClaim name = do
-  logMessage $ "Deleting persistent volume claim '" <> name <> "'"
+  logDebug $ "Deleting persistent volume claim '" <> name <> "'"
   namespacedF $ \namespace -> Kube.deleteNamespacedPersistentVolumeClaim namespace name Nothing (DeleteOptions.mkDeleteOptions 0)

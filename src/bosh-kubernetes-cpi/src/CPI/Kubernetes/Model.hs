@@ -49,7 +49,7 @@ volumeMount name path readOnly = let
                   & VolumeMount.readOnly .~ maybeReadOnly
 
 container :: Text -> Base.StemcellId -> Container.Container
-container name stemcell = Container.mkContainer name
+container name (Base.StemcellId stemcell) = Container.mkContainer name
                 & Container.image .~ Just stemcell
 
 podSpec :: Container.Container -> PodSpec.PodSpec
