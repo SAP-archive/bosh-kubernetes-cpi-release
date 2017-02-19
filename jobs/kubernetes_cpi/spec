@@ -22,9 +22,10 @@ properties:
     default: []
     example: ["0.us.pool.ntp.org", "1.us.pool.ntp.org"]
 
-  mbus:
-    description: Message bus endpoint for the agent to start accepting agent requests
-    example: https://user:password@192.168.0.1:5000
+  agent:
+    mbus:
+      description: Message bus endpoint for the agent to start accepting agent requests
+      example: https://user:password@192.168.0.1:5000
 
   blobstore.address:
     description: Address for agent to connect to blobstore server used by 'simple' blobstore plugin
