@@ -259,7 +259,7 @@ hasPersistentVolumeClaim name = do
 
 deletePersistentVolumeClaim :: (MonadIO m, MonadCatch m, MonadReader Config m, MonadLog (WithSeverity Text) m) =>
      Text
-  -> m Status.Status
+  -> m PersistentVolumeClaim.PersistentVolumeClaim
 deletePersistentVolumeClaim name = do
   logDebug $ "Deleting persistent volume claim '" <> name <> "'"
   namespacedF $ \namespace -> Kube.deleteNamespacedPersistentVolumeClaim namespace name Nothing (DeleteOptions.mkDeleteOptions 0)
