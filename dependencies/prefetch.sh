@@ -9,5 +9,6 @@ pushd $PWD/src/bosh-kubernetes-cpi
 popd
 
 pushd $CACHE
+  rm -rf build-plan-cache programs snapshots
   tar -czvf $BLOBS/bosh_kubernetes_cpi/dependencies.source.tgz *
 popd

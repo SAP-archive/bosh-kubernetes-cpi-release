@@ -8,7 +8,14 @@ files:
   - bosh_kubernetes_cpi/dependencies.source.tgz
   - bosh-kubernetes-cpi/app/**/*
   - bosh-kubernetes-cpi/src/**/*
-  - bosh-kubernetes-cpi/forks/**/*
   - bosh-kubernetes-cpi/*.cabal
   - bosh-kubernetes-cpi/Setup.hs
   - bosh-kubernetes-cpi/stack.yaml
+  - bosh-kubernetes-cpi/forks/haskell-bosh-cpi/src/**/*
+  - bosh-kubernetes-cpi/forks/haskell-bosh-cpi/haskell-bosh-cpi.cabal
+  - bosh-kubernetes-cpi/forks/haskell-bosh-cpi/Setup.hs
+  - bosh-kubernetes-cpi/forks/haskell-bosh-cpi/LICENSE
+  - bosh-kubernetes-cpi/forks/haskell-kubernetes/lib/**/*
+  - bosh-kubernetes-cpi/forks/haskell-kubernetes/haskell-kubernetes.cabal
+  - bosh-kubernetes-cpi/forks/haskell-kubernetes/Setup.hs
+  - bosh-kubernetes-cpi/forks/haskell-kubernetes/LICENSE
