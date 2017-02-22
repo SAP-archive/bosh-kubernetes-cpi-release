@@ -4,6 +4,5 @@ name: stack
 dependencies: []
 
 files:
-  - stack/stack-1.2.0-osx-x86_64.tar.gz
-  - stack/stack-1.2.0-linux-x86_64.tar.gz
-  - stack/stack-1.2.0-linux-x86_64-gmp4.tar.gz
+  - stack/stack-1.3.2-osx-x86_64.tar.gz
+  - stack/stack-1.3.2-linux-x86_64-static.tar.gz
