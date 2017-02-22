@@ -1,0 +1,17 @@
+set -e
+
+if [ `uname` == "Darwin" ]; then
+  tar xzf ghc/ghc-8.0.1-x86_64-apple-darwin.tar.xz
+else
+  source /etc/os-release
+  if [ "$NAME" == "Ubuntu" ]; then
+    tar xJf ghc/ghc-8.0.1-x86_64-deb8-linux.tar.xz
+  else
+    tar xJf ghc/ghc-8.0.1-x86_64-centos67-linux.tar.xz
+  fi
+fi
+
+pushd ghc-8.0.1
+  ./configure --prefix=${BOSH_INSTALL_TARGET}
+  make install
+popd
