@@ -51,6 +51,7 @@ import qualified Kubernetes.Model.V1.ObjectMeta            as ObjectMeta
 import qualified Kubernetes.Model.V1.PersistentVolumeClaim as PersistentVolumeClaim
 import qualified Kubernetes.Model.V1.Pod                   as Pod
 import qualified Kubernetes.Model.V1.PodSpec               as PodSpec
+import qualified Kubernetes.Model.V1.ResourceRequirements  as ResourceRequirements
 import qualified Kubernetes.Model.V1.Secret                as Secret
 import qualified Kubernetes.Model.V1.SecretList            as SecretList
 import qualified Kubernetes.Model.V1.SecurityContext       as SecurityContext
@@ -77,7 +78,7 @@ instance Base.MonadCpi Config IO where
     -> Base.DiskLocality
     -> Base.Environment
     -> Base.Cpi Config IO Base.VmId
-  createVm agentId stemcell (Base.VmProperties cloudProperties) networkSpec diskLocality env = do
+  createVm agentId stemcell cloudProperties networkSpec diskLocality env = do
     logDebug $ "Create VM for agent '" <> Unwrapped agentId <> "'"
     let labels = HashMap.empty
                       & HashMap.insert "agentId" (toJSON agentId)
@@ -106,16 +107,19 @@ instance Base.MonadCpi Config IO where
                  .~ Just (Any.Any rawSecret)
       in createSecret secret
     logDebug "Secret uploaded"
+    vmType <- VmTypes.parseVmProperties cloudProperties
     let
       serviceSelector = HashMap.empty
                         & HashMap.insert "agentId" (toJSON agentId)
-      serviceSpec = VmTypes.createServiceSpec cloudProperties
-                    & ServiceSpec.selector
-                    .~ Just (Any.Any serviceSelector)
-      service = Model.service "vip" serviceSpec
-              & Service.metadata._Just.ObjectMeta.labels
+      services = VmTypes.createServices vmType
+              & each.Service.metadata._Just.ObjectMeta.labels
               .~ Just (Any.Any labels)
-      in createService service
+              & each.Service.spec._Just.ServiceSpec.selector
+              .~ Just (Any.Any serviceSelector)
+      in
+        do
+          logDebug $ "Create Services" <> (Text.pack.show) services
+          createService `mapM` services
     pod <- let
       securityContext = SecurityContext.mkSecurityContext
                         & SecurityContext.privileged .~ Just True
@@ -130,9 +134,14 @@ instance Base.MonadCpi Config IO where
                         & Container.tty .~ Just True
                         & Container.stdin .~ Just True
                         & Container.securityContext .~ Just securityContext
-                        & Container.volumeMounts .~ Just [Model.volumeMount "settings" "/var/vcap/bosh/secrets" True]
+                        & Container.volumeMounts .~ Just [
+                              Model.volumeMount "settings" "/var/vcap/bosh/secrets" True
+                            , Model.volumeMount "ephemeral-disk" "/var/vcap/data" False
+                        ]
       podSpec         = Model.podSpec container
-                        & PodSpec.volumes .~ Just [Model.secretVolume "settings" $ secretName secret]
+                        & PodSpec.volumes .~ Just [
+                            Model.secretVolume "settings" $ secretName secret
+                          , Model.emptyVolume "ephemeral-disk"]
                         & PodSpec.restartPolicy .~ Just "Never"
       pod             = Model.pod "bosh-vm" podSpec
                         & (Pod.metadata . _Just . ObjectMeta.labels) .~ Just (Any.Any labels)

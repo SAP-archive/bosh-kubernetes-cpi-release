@@ -11,6 +11,7 @@ import           Data.Text                                             (Text)
 import qualified Data.Text                                             as Text
 import qualified Kubernetes.Model.V1.Any                               as Any
 import qualified Kubernetes.Model.V1.Container                         as Container
+import qualified Kubernetes.Model.V1.EmptyDirVolumeSource              as EmptyDirVolumeSource
 import qualified Kubernetes.Model.V1.ObjectMeta                        as ObjectMeta
 import qualified Kubernetes.Model.V1.PersistentVolumeAccessMode        as PersistentVolumeAccessMode
 import           Kubernetes.Model.V1.PersistentVolumeClaim             (PersistentVolumeClaim)
@@ -37,6 +38,10 @@ import qualified CPI.Base                                              as Base
 secretVolume :: Text -> Text -> Volume.Volume
 secretVolume volumeName secretName = Volume.mkVolume volumeName
                 & Volume.secret .~ Just (SecretVolumeSource.mkSecretVolumeSource & SecretVolumeSource.secretName .~ Just secretName)
+
+emptyVolume :: Text -> Volume.Volume
+emptyVolume volumeName = Volume.mkVolume volumeName
+                & Volume.emptyDir .~ Just EmptyDirVolumeSource.mkEmptyDirVolumeSource
 
 persistentVolume :: Text -> Text -> Volume.Volume
 persistentVolume volumeName claimName = Volume.mkVolume volumeName
