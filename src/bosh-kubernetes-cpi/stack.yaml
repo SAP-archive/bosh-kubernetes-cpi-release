@@ -38,9 +38,9 @@ resolver: lts-7.19
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - '.'
-- location: 'forks/haskell-bosh-cpi'
+- location: 'dependencies/haskell-bosh-cpi'
   extra-dep: true
-- location: 'forks/haskell-kubernetes'
+- location: 'dependencies/haskell-kubernetes'
   extra-dep: true
 # - location: 'forks/logging-effect'
 #   extra-dep: true
