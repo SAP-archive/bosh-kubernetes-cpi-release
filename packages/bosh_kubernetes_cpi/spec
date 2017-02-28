@@ -12,11 +12,11 @@ files:
   - bosh-kubernetes-cpi/*.cabal
   - bosh-kubernetes-cpi/Setup.hs
   - bosh-kubernetes-cpi/stack.yaml
-  - bosh-kubernetes-cpi/forks/haskell-bosh-cpi/src/**/*
-  - bosh-kubernetes-cpi/forks/haskell-bosh-cpi/haskell-bosh-cpi.cabal
-  - bosh-kubernetes-cpi/forks/haskell-bosh-cpi/Setup.hs
-  - bosh-kubernetes-cpi/forks/haskell-bosh-cpi/LICENSE
-  - bosh-kubernetes-cpi/forks/haskell-kubernetes/lib/**/*
-  - bosh-kubernetes-cpi/forks/haskell-kubernetes/haskell-kubernetes.cabal
-  - bosh-kubernetes-cpi/forks/haskell-kubernetes/Setup.hs
-  - bosh-kubernetes-cpi/forks/haskell-kubernetes/LICENSE
+  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/src/**/*
+  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/haskell-bosh-cpi.cabal
+  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/Setup.hs
+  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/LICENSE
+  - bosh-kubernetes-cpi/dependencies/haskell-kubernetes/lib/**/*
+  - bosh-kubernetes-cpi/dependencies/haskell-kubernetes/haskell-kubernetes.cabal
+  - bosh-kubernetes-cpi/dependencies/haskell-kubernetes/Setup.hs
+  - bosh-kubernetes-cpi/dependencies/haskell-kubernetes/LICENSE
