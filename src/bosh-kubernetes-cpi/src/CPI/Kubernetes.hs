@@ -165,7 +165,7 @@ instance Base.MonadCpi Config IO where
       Just pod -> do
         _ <- let
           serviceNames :: Traversal' ServiceList.ServiceList Text
-          serviceNames = ServiceList.items.each.Service.metadata._Just.ObjectMeta.name._Just
+          serviceNames = ServiceList.items._Just.each.Service.metadata._Just.ObjectMeta.name._Just
           Just agentId = pod ^? Pod.metadata._Just.ObjectMeta.labels._Just.Any.any.at "agentId"._Just._String
           selector = "agentId" <> "=" <> agentId
           in do
