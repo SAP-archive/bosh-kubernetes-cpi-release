@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-7.13
+resolver: lts-7.19
 # docker:
 #   enable: true
 # User packages to be built.
