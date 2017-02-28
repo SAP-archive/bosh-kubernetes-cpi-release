@@ -4,7 +4,7 @@ set -e
 version=3363.9
 url=https://bosh.io/d/stemcells/bosh-warden-boshlite-ubuntu-trusty-go_agent?v=${version}
 account=loewenstein
-name=bosh-stemcell-$version-kubernetes-ubuntu-trusty-go_agent
+name=bosh-stemcell-kubernetes-ubuntu-trusty-go_agent
 fullname=$account/$name
 
 mkdir -p build
