@@ -1,0 +1,20 @@
+{
+    "Platform": {
+        "Linux": {
+            "UseDefaultTmpDir": true,
+            "UsePreformattedPersistentDisk": true,
+            "BindMountPersistentDisk": true,
+            "UseDirectoryAsEphemeralDisk": true
+        }
+    },
+    "Infrastructure": {
+        "Settings": {
+            "Sources": [{
+                "Type": "File",
+                "SettingsPath": "/var/vcap/bosh/secrets/settings.json"
+            }],
+
+            "UseRegistry": false
+        }
+    }
+}

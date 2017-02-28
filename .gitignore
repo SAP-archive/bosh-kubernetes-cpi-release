@@ -1,0 +1,13 @@
+stemcell/build/*
+config/final.yml
+.stack-work
+.vscode
+.DS_Store
+scratch
+.dev_builds/
+dev_releases/
+blobs/
+dependencies/cache
+dependencies/all
+src/bosh-kubernetes-cpi/forks
+*.tgz
