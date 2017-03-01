@@ -1,5 +1,5 @@
 stemcell/build/*
-config/final.yml
+config/private.yml
 .stack-work
 .vscode
 .DS_Store
