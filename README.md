@@ -59,6 +59,10 @@ $ bosh-go create-env ~/projects/bosh-deployment/bosh.yml \
 ```
 
 ### BOSH on BOSH
+**This does not work yet**
+
+*Due to the re-creation of the Pod for `attach_disk` there is a timing issue that has to be solved in director before we can deploy with a boostrapped BOSH.*
+
 - Upload stemcell and releases (PoC ignores stemcell, best you choose any *lite stemcell* from https://bosh.io)
 ```
 $ bosh -e $(minikube ip):30555 \

@@ -5,6 +5,7 @@ config/private.yml
 .DS_Store
 scratch
 .dev_builds/
+.final_builds/
 dev_releases/
 blobs/
 dependencies/cache

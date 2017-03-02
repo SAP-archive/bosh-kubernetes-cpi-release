@@ -1,0 +1,31 @@
+name: bosh-kubernetes-cpi
+version: 1-alpha
+commit_hash: 0f6578e
+uncommitted_changes: true
+jobs:
+- name: kubernetes_cpi
+  version: 8465434c491212097663578896ad2d721285b451
+  fingerprint: 8465434c491212097663578896ad2d721285b451
+  sha1: 55e0fa5a8369177b67fffc461a15e02eb0eb843f
+packages:
+- name: bosh_kubernetes_cpi
+  version: 221756822dbf93b6a5b962960946a124f0cf8271
+  fingerprint: 221756822dbf93b6a5b962960946a124f0cf8271
+  sha1: 30a13d78d6cb73e133747bbc00d31c9f949e6128
+  dependencies:
+  - stack
+  - ghc-8.0.1
+- name: ghc-8.0.1
+  version: b69dc2c1714bff5c0d0a2509c48a3a881234e2fc
+  fingerprint: b69dc2c1714bff5c0d0a2509c48a3a881234e2fc
+  sha1: 2b739df4f5feedeb55fc8781d85c19b9e471a077
+  dependencies: []
+- name: stack
+  version: e068b0521287e27472b94ee06acfe8838cde52f0
+  fingerprint: e068b0521287e27472b94ee06acfe8838cde52f0
+  sha1: b3f5ba8082002ace2150141a73a35212c6a53ea7
+  dependencies: []
+license:
+  version: e943c546a59e601040de3cd0f755f1fd3aba4631
+  fingerprint: e943c546a59e601040de3cd0f755f1fd3aba4631
+  sha1: 161cac3f4f61bf20505b36bf489dc3baf9e0f088
