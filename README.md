@@ -39,6 +39,7 @@ $ kubectl create -f ./minikube/persistent-disks.yml (for any further deployment)
 $ mkdir -p ~/projects
 $ cd ~/projects
 $ git clone git@github.com:loewenstein/bosh-deployment.git
+$ git checkout origin/kubernetes
 $ mkdir -p ~/projects/bosh-on-k8s
 $ cd bosh-on-k8s
 $ bosh-go create-env ~/projects/bosh-deployment/bosh.yml \
