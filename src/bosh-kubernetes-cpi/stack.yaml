@@ -53,14 +53,31 @@ extra-deps:
   - http-client-0.5.5
   - http-client-tls-0.3.3
   - MonadRandom-0.5
+  - integer-simple-0.1.1.1
+  - bytestring-0.10.8.1
+  - text-1.2.2.1
+  - scientific-0.3.4.9
+  - hashable-1.2.4.0
+  - cryptonite-0.21
 
 # Override default flag values for local packages and extra-deps
-flags: {}
+flags:
+  bytestring:
+    integer-simple: true
+  text:
+    integer-simple: true
+  scientific:
+    integer-simple: true
+  hashable:
+    integer-gmp: false
+  cryptonite:
+    integer-gmp: false
 
 ghc-options: {}
 # Extra package databases containing global packages
 extra-package-dbs: []
 
+ghc-variant: integersimple
 # Control whether we use the GHC we find on the path
 # system-ghc: true
 #
