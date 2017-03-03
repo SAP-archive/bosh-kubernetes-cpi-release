@@ -46,7 +46,13 @@ packages:
 #   extra-dep: true
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
-extra-deps: [pem-0.2.2, tls-extra-0.6.1, logging-effect-1.1.1, http-client-0.5.5, http-client-tls-0.3.3, MonadRandom-0.5]
+extra-deps:
+  - pem-0.2.2
+  - tls-extra-0.6.1
+  - logging-effect-1.1.1
+  - http-client-0.5.5
+  - http-client-tls-0.3.3
+  - MonadRandom-0.5
 
 # Override default flag values for local packages and extra-deps
 flags: {}
