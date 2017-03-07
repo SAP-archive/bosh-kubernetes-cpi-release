@@ -1,0 +1,16 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: loewenstein/main-stack
+
+inputs:
+  - name: cpi-src
+
+outputs:
+  - name: stack-work
+
+run:
+  path: cpi-src/ci/tasks/compile.sh

@@ -1,0 +1,31 @@
+---
+groups:
+- name: bosh-kubernetes-cpi-release
+  jobs:
+  - build
+  # - release
+
+jobs:
+- name: build
+  serial: true
+  plan:
+  - aggregate:
+    - {trigger: true, get: cpi-src}
+
+  - task: compile
+    file: cpi-src/ci/tasks/compile.yml
+
+  - task: test-unit
+    file: cpi-src/ci/tasks/test-unit.yml
+
+resources:
+  - name: cpi-src
+    type: git
+    source:
+      uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
+      branch: master
+      ignore_paths:
+        - releases/bosh-kubernetes-cpi/**
+        - .final_builds/**
+        - docs/**
+        - README.md

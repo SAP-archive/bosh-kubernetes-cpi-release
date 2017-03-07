@@ -1,6 +1,6 @@
 [submodule "bosh-cpi-haskell"]
 	path = src/bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell
-	url = git@github.com:SAP/bosh-cpi-haskell.git
+	url = https://github.com/SAP/bosh-cpi-haskell.git
 [submodule "haskell-kubernetes"]
 	path = src/bosh-kubernetes-cpi/dependencies/haskell-kubernetes
-	url = git@github.com:loewenstein/haskell-kubernetes.git
+	url = https://github.com/loewenstein/haskell-kubernetes.git
