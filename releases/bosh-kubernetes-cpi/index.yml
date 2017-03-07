@@ -1,4 +1,6 @@
 builds:
+  13a033a3-7468-4499-6aba-19695e050c24:
+    version: 2-alpha
   a3d060f0-2241-4321-45f9-035986961367:
     version: 1-alpha
 format-version: "2"
