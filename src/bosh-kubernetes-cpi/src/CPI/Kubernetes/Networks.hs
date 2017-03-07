@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE InstanceSigs      #-}
 {-# LANGUAGE OverloadedStrings #-}
-module CPI.Kubernetes.Networks() where
+module CPI.Kubernetes.Networks where
 
 import           Control.Lens
 import           Control.Monad.Catch
@@ -20,8 +20,11 @@ import           Data.Text            (Text)
 createServiceSpec :: Value -> [Value]
 createServiceSpec netSpec = netSpec ^.. (vipNetworks . cloudProperties)
 
-networks :: Traversal' Value Object
-networks = members . _Object
+networks :: Traversal' Value Value
+networks = members
+
+preconfigured :: Traversal' Object Value
+preconfigured = at "preconfigured".non (Bool False)
 
 networkType :: Traversal' Value Text
 networkType = key "type" . _String

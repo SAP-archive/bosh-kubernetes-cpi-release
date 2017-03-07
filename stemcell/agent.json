@@ -4,7 +4,7 @@
             "UseDefaultTmpDir": true,
             "UsePreformattedPersistentDisk": true,
             "BindMountPersistentDisk": true,
-            "UseDirectoryAsEphemeralDisk": true
+            "SkipDiskSetup": true
         }
     },
     "Infrastructure": {

@@ -11,6 +11,8 @@ import qualified CPI.Base                                  as Base
 import           CPI.Kubernetes.Config
 import           CPI.Kubernetes.Http
 import qualified CPI.Kubernetes.Model                      as Model
+import           CPI.Kubernetes.Networks                   (networks,
+                                                            preconfigured)
 import qualified CPI.Kubernetes.Secrets                    as Secrets
 import qualified CPI.Kubernetes.VmTypes                    as VmTypes
 import           Data.Maybe
@@ -78,7 +80,7 @@ instance Base.MonadCpi Config IO where
     -> Base.DiskLocality
     -> Base.Environment
     -> Base.Cpi Config IO Base.VmId
-  createVm agentId stemcell cloudProperties networkSpec diskLocality env = do
+  createVm agentId stemcell cloudProperties (Base.Networks networkSpec) diskLocality env = do
     logDebug $ "Create VM for agent '" <> Unwrapped agentId <> "'"
     let labels = HashMap.empty
                       & HashMap.insert "agentId" (toJSON agentId)
@@ -87,7 +89,7 @@ instance Base.MonadCpi Config IO where
       settings :: Object
       settings = agent config
                  & HashMap.insert "agent_id" (toJSON agentId)
-                 & HashMap.insert "networks" (toJSON networkSpec)
+                 & HashMap.insert "networks" (toJSON (networkSpec & networks._Object.preconfigured .~ Bool True))
                  & HashMap.insert "env" (toJSON env)
                  & HashMap.insert "disks" (Object $ HashMap.singleton "system" (String "/dev/sda")
                                                   & HashMap.insert "persistent" (Object HashMap.empty))
