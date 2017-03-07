@@ -38,11 +38,12 @@ $ kubectl create -f ./minikube/persistent-disks.yml (for any further deployment)
 ```
 $ mkdir -p ~/projects
 $ cd ~/projects
+$ cd bosh-deployment
 $ git clone git@github.com:loewenstein/bosh-deployment.git
 $ git checkout origin/kubernetes
 $ mkdir -p ~/projects/bosh-on-k8s
-$ cd bosh-on-k8s
-$ bosh-go create-env ~/projects/bosh-deployment/bosh.yml \
+$ cd ~/projects/bosh-on-k8s
+$ bosh create-env ~/projects/bosh-deployment/bosh.yml \
   --state ./state.json \
   -o ~/projects/bosh-deployment/kubernetes/cpi.yml \
   -o ~/projects/bosh-deployment/local-dns.yml \
@@ -70,21 +71,21 @@ $ bosh -e $(minikube ip):30555 \
     --ca-cert <(bosh int ./creds.yml --path /director_ssl/ca) \
     alias-env outer-bosh
 
-$ bosh-go -e outer-bosh \
+$ bosh -e outer-bosh \
     upload-release \
     https://bosh.io/d/github.com/cloudfoundry/bosh?v=261.2 \
     --client admin \
-    --client-secret $(bosh-go int ./creds.yml --path /admin_password)
-$ bosh-go -e outer-bosh \
+    --client-secret $(bosh int ./creds.yml --path /admin_password)
+$ bosh -e outer-bosh \
     upload-release \
-    ../bosh-kubernetes-cpi.tgz \
+    https://github.com/SAP/bosh-kubernetes-cpi-release/releases/download/v1-alpha/bosh-kubernetes-cpi-1-alpha.tgz \
     --client admin \
-    --client-secret $(bosh-go int ./creds.yml --path /admin_password)
-$ bosh-go -e outer-bosh \
+    --client-secret $(bosh int ./creds.yml --path /admin_password)
+$ bosh -e outer-bosh \
     upload-stemcell \
-    https://s3.amazonaws.com/bosh-aws-light-stemcells/light-bosh-stemcell-3363.9-aws-xen-hvm-ubuntu-trusty-go_agent.tgz \
+    https://github.com/SAP/bosh-kubernetes-cpi-release/releases/download/v1-alpha/bosh-stemcell-3363.9-kubernetes-ubuntu-trusty-go_agent.tgz \
     --client admin \
-    --client-secret $(bosh-go int ./creds.yml --path /admin_password)
+    --client-secret $(bosh int ./creds.yml --path /admin_password)
 
 $ bosh -e outer-bosh \
     update-cloud-config ~/projects/bosh-deployment/kubernetes/cloud-config.yml \
@@ -95,14 +96,15 @@ $ bosh -e outer-bosh \
     -v port-director=31555 \
     -v port-nats=31422
 
-$ bosh-go -e outer-bosh \
+$ bosh -e outer-bosh \
     deploy ~/projects/bosh-deployment/bosh.yml \
     -d bosh \
     -o ~/projects/bosh-deployment/kubernetes/cpi.yml \
     -o ~/projects/bosh-deployment/bosh-dev.yml \
     -o ~/projects/bosh-deployment/kubernetes/cpi-inner.yml \
+    -o ~/projects/bosh-deployment/local-dns.yml \
     --client admin \
-    --client-secret $(bosh-go int ./creds.yml --path /admin_password) \
+    --client-secret $(bosh int ./creds.yml --path /admin_password) \
     --vars-store ./inner-creds.yml \
     -v internal_ip=$(minikube ip) \
     --var-file=client-cert=$(kubectl config view -o json | jq -r '.users[] | select(.name=="minikube") | .user."client-certificate"') \
