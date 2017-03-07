@@ -2,9 +2,10 @@
 
 set -e
 
-STACK_WORK=$PWD/stack-work
+STACK_WORK_INPUT=$PWD/stack-work
+export STACK_ROOT=/root/.stack
 
 pushd cpi-src/src/bosh-kubernetes-cpi
-  cp -R $STACK_WORK/.stack-work .
+  cp -R $STACK_WORK_INPUT/.stack-work .
   stack test
 popd
