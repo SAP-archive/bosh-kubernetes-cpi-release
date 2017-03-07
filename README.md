@@ -27,9 +27,7 @@ $ minikube start --cpus 3 --memory 4096 --disk-size 80g --vm-driver xhyve
 ```
 2. Prepare Kubernetes
 ```
-$ kubectl create -f ./minikube/persistent-disks.yml (for bootstrap BOSH)
-$ kubectl create -f ./minikube/persistent-disks.yml (for BOSH on BOSH)
-$ kubectl create -f ./minikube/persistent-disks.yml (for any further deployment)
+$ kubectl create -f ./minikube/persistent-disks.yml
 ```
 
 ### Bootstrap BOSH
@@ -40,7 +38,7 @@ $ mkdir -p ~/projects
 $ cd ~/projects
 $ cd bosh-deployment
 $ git clone git@github.com:loewenstein/bosh-deployment.git
-$ git checkout origin/kubernetes
+$ git checkout origin/latest-bosh
 $ mkdir -p ~/projects/bosh-on-k8s
 $ cd ~/projects/bosh-on-k8s
 $ bosh create-env ~/projects/bosh-deployment/bosh.yml \
@@ -73,7 +71,7 @@ $ bosh -e $(minikube ip):30555 \
 
 $ bosh -e outer-bosh \
     upload-release \
-    https://bosh.io/d/github.com/cloudfoundry/bosh?v=261.2 \
+    https://bosh.io/d/github.com/cloudfoundry/bosh?v=261.3 \
     --client admin \
     --client-secret $(bosh int ./creds.yml --path /admin_password)
 $ bosh -e outer-bosh \
