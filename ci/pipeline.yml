@@ -21,5 +21,10 @@ resources:
   - name: cpi-src
     type: git
     source:
-      uri: git@github.com:sap/bosh-kubernetes-cpi-release.git
-      branch: master
+      uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
+      branch: ci
+      ignore_paths:
+        - releases/bosh-kubernetes-cpi/**
+        - .final_builds/**
+        - docs/**
+        - README.md
