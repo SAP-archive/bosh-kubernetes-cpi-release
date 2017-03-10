@@ -8,14 +8,24 @@ packages:
   - bosh_kubernetes_cpi
 
 properties:
-  kubernetes.apiEndpoint:
-    description: URL of the Kubernetes API endpoint to connect to (required)
-  kubernetes.namespace:
-    description: Kubernetes namespace (required)
-  kubernetes.credentials.certificate:
-    description: Kubernetes Client certificate (required)
-  kubernetes.credentials.privateKey:
-    description: Kubernetes Client private key (required)
+  kubernetes.cluster-access:
+    description: Configuration of how to access the Kubernetes API.
+                 If you leave out cluster-access the cpi expects a service account to be available
+                 on the Pod.
+    default: ServiceAccount
+    example:
+      cluster-access: ServiceAccount
+      cluster-access:
+        server: https://my.kubernetes.api/
+        namespace: default
+        credentials:
+          token: xxxxx-xxxxx-xxxxx
+      cluster-access:
+        server: https://my.kubernetes.api/
+        namespace: default
+        credentials:
+          certificate: my-cert
+          private-key: my-key
 
   ntp:
     description: List of NTP servers

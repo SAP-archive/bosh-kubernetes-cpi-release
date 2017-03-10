@@ -1,11 +1,6 @@
 <%=
   params = {
-    'apiEndpoint' => p('kubernetes.apiEndpoint'),
-    'namespace' => p('kubernetes.namespace'),
-    'credentials' => {
-      'certificate' => p('kubernetes.credentials.certificate'),
-      'privateKey' => p('kubernetes.credentials.privateKey')
-    },
+    'cluster-access' => p('kubernetes.cluster-access'),
     'agent' => {
       'ntp' => p('ntp'),
       'mbus' => p('agent.mbus')

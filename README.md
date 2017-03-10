@@ -118,6 +118,7 @@ $ bosh -e $(minikube ip):31555 \
 - Only *dynamic networks* are supported, hence releases that require static IPs are out for now.
 - `attach_disk` is implemented by deleting the Pod and creating a new one with the required *persistent disk* attached.
 - bosh agent requires to run in privileged containers
+- communication with Kubernetes is always insecure (i.e. no SSL verification)
 
 Copyright and license
 ---------------------
