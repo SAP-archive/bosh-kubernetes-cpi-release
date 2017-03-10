@@ -72,7 +72,7 @@ $ bosh -e outer-bosh \
     --client-secret $(bosh int ./outer-bosh/creds.yml --path /admin_password)
 $ bosh -e outer-bosh \
     upload-release \
-    https://github.com/SAP/bosh-kubernetes-cpi-release/releases/download/v2-alpha/bosh-kubernetes-cpi-2-alpha.tgz \
+    https://github.com/SAP/bosh-kubernetes-cpi-release/releases/download/v3-alpha/bosh-kubernetes-cpi-3-alpha.tgz \
     --client admin \
     --client-secret $(bosh int ./outer-bosh/creds.yml --path /admin_password)
 $ bosh -e outer-bosh \
