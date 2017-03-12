@@ -38,11 +38,12 @@ pushd bosh-on-k8s
 
   echo "Updating cloud-config..."
   bosh -n -e outer-bosh \
-      update-cloud-config ~/projects/bosh-deployment/kubernetes/cloud-config.yml \
+      update-cloud-config $BOSH_DEPLOYMENT/kubernetes/cloud-config.yml \
       --client admin \
       --client-secret $(bosh int ./outer-bosh/creds.yml --path /admin_password) \
       -o $BOSH_DEPLOYMENT/kubernetes/bosh-cloud-config.yml \
       -o $BOSH_DEPLOYMENT/kubernetes/bosh-cloud-config-ports.yml \
+      --var-file=vcap_public_key=inner-bosh/bosh.key.pub \
       -v port_blobstore=31250 \
       -v port_director=31555 \
       -v port_nats=31422 \
