@@ -6,17 +6,23 @@ BASE_DIR=${BASE_DIR:-./bosh-on-k8s}
 BOSH_DEPLOYMENT=${BOSH_DEPLOYMENT:-$BASE_DIR/bosh-deployment}
 echo "Working directory: $BASE_DIR"
 
-mkdir -p bosh-on-k8s
-pushd bosh-on-k8s
+mkdir -p $BASE_DIR
+pushd $BASE_DIR
   if [ ! -d "$BOSH_DEPLOYMENT" ]; then
     echo "Cloning bosh-deployment into: $BOSH_DEPLOYMENT"
-    git clone git@github.com:loewenstein/bosh-deployment.git
+    git clone https://github.com/loewenstein/bosh-deployment.git
     pushd bosh-deployment
-      git checkout origin/latest-bosh
+      git checkout origin/kubernetes
     popd
   else
     echo "Use existing bosh-deployment directory: $BOSH_DEPLOYMENT"
   fi
+
+  mkdir -p inner-bosh
+  if [ ! -f inner-bosh/bosh.key.pub ]; then
+    ssh-keygen -t rsa -b 4096 -C "vcap" -N "" -f inner-bosh/bosh.key
+  fi
+
   echo "Uploading releases..."
   bosh -e outer-bosh \
       upload-release \
@@ -49,10 +55,6 @@ pushd bosh-on-k8s
       -v port_nats=31422 \
       -v port_ssh_gateway=31022
 
-  mkdir -p inner-bosh
-  if [ ! -f inner-bosh/bosh.key.pub ]; then
-    ssh-keygen -t rsa -b 4096 -C "vcap" -N "" -f inner-bosh/bosh.key
-  fi
   echo "Deploying inner bosh"
   bosh -n -e outer-bosh \
       deploy $BOSH_DEPLOYMENT/bosh.yml \
