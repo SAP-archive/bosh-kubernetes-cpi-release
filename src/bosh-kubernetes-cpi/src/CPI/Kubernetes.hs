@@ -132,6 +132,9 @@ instance Base.MonadCpi Config IO where
                              "cp /etc/resolv.conf /etc/resolv.conf.dup; "
                           <> "umount /etc/resolv.conf; "
                           <> "mv /etc/resolv.conf.dup /etc/resolv.conf; "
+                          <> "cp /etc/hosts /etc/hosts.dup; "
+                          <> "umount /etc/hosts; "
+                          <> "mv /etc/hosts.dup /etc/hosts; "
                           <> "exec env -i /usr/sbin/runsvdir-start"]
                         & Container.tty .~ Just True
                         & Container.stdin .~ Just True
