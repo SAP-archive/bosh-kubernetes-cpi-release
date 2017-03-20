@@ -1,0 +1,21 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: loewenstein/main-bosh
+
+inputs:
+  - name: cpi-src
+  - name: dev-release
+  - name: release-version-semver
+outputs:
+  - name: promote
+  - name: final-release
+run:
+  path: cpi-src/ci/tasks/finalize-release.sh
+params:
+  aws_access_key_id:      replace-me
+  aws_secret_access_key:  replace-me
+  release_version_suffix: replace-me
