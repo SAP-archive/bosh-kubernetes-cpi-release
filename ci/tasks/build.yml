@@ -9,8 +9,5 @@ image_resource:
 inputs:
   - name: cpi-src
 
-outputs:
-  - name: stack-work
-
 run:
-  path: cpi-src/ci/tasks/compile.sh
+  path: cpi-src/ci/tasks/build.sh

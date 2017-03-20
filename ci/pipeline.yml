@@ -3,20 +3,75 @@ groups:
 - name: bosh-kubernetes-cpi-release
   jobs:
   - build
-  # - release
+  - create-release
+  - finalize-release
 
 jobs:
 - name: build
   serial: true
   plan:
   - aggregate:
-    - {trigger: true, get: cpi-src}
+    - get: cpi-src
+      trigger: true
 
-  - task: compile
-    file: cpi-src/ci/tasks/compile.yml
+  - task: build
+    file: cpi-src/ci/tasks/build.yml
 
-  - task: test-unit
-    file: cpi-src/ci/tasks/test-unit.yml
+- name: create-release
+  serial: true
+  plan:
+  - aggregate:
+      - get: cpi-src
+        trigger: true
+        passed:
+          - build
+      - get: dev-version-semver
+        params:
+          bump: patch
+
+  - task: create-release
+    file: cpi-src/ci/tasks/create-release.yml
+  - put: dev-release
+    params:
+      file: dev-release/bosh-kubernetes-cpi\.*\.tgz
+  - put: dev-version-semver
+    params: {file: dev-version-semver/number}
+
+- name: finalize-release
+  serial: true
+  plan:
+    - aggregate:
+      - get: cpi-src
+        passed:
+          - create-release
+      - get: dev-release
+        passed:
+          - create-release
+      - get: release-version-semver
+        params:
+          bump:
+            major
+
+    - task: finalize-release
+      file: cpi-src/ci/tasks/finalize-release.yml
+      params:
+        aws_access_key_id: {{kubernetes_cpi_blobs_access_key}}
+        aws_secret_access_key: {{kubernetes_cpi_blobs_secret_key}}
+        release_version_suffix: "-alpha"
+    - put: release-version-semver
+      params:
+        file: release-version-semver/number
+
+    - put: bosh-cpi-src-out
+      params:
+        repository: promote/repo
+        rebase: true,
+        tag: promote/version
+        tag_prefix: "v"
+
+    - put: final-release
+      params:
+        file: final-release/bosh-kubernetes-cpi\.*\.tgz
 
 resources:
   - name: cpi-src
@@ -29,3 +84,48 @@ resources:
         - .final_builds/**
         - docs/**
         - README.md
+
+  - name: cpi-src-out
+    type: git
+    source:
+      uri: git@github.com:sap/bosh-kubernetes-cpi-release.git
+      branch: master
+      private_key: {{github_deployment_key}}
+
+  - name: dev-version-semver
+    type: semver
+    source:
+      key:                current-dev-version
+      initial_version: 0.0.0
+      bucket:             {{pipeline_bucket_name}}
+      region_name: eu-central-1
+      access_key_id:      {{pipeline_bucket_access_key}}
+      secret_access_key:  {{pipeline_bucket_secret_key}}
+
+  - name: dev-release
+    type: s3
+    source:
+      regexp: main/dev-releases/bosh-kubernetes-cpi-([0-9.]+)\.tgz
+      bucket: {{pipeline_bucket_name}}
+      region_name: eu-central-1
+      access_key_id:      {{pipeline_bucket_access_key}}
+      secret_access_key:  {{pipeline_bucket_secret_key}}
+
+  - name: final-release
+    type: s3
+    source:
+      regexp: main/final-releases/bosh-kubernetes-cpi-([0-9.]+(-alpha)?)\.tgz
+      bucket: {{pipeline_bucket_name}}
+      region_name: eu-central-1
+      access_key_id:      {{pipeline_bucket_access_key}}
+      secret_access_key:  {{pipeline_bucket_secret_key}}
+
+  - name: release-version-semver
+    type: semver
+    source:
+      key:                release-current-version
+      initial_version: 5.0.0
+      bucket:             {{pipeline_bucket_name}}
+      region_name: eu-central-1
+      access_key_id:      {{pipeline_bucket_access_key}}
+      secret_access_key:  {{pipeline_bucket_secret_key}}

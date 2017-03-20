@@ -6,11 +6,11 @@ BASE_DIR=${BASE_DIR:-./bosh-on-k8s}
 BOSH_DEPLOYMENT=${BOSH_DEPLOYMENT:-$BASE_DIR/bosh-deployment}
 echo "Working directory: $BASE_DIR"
 
-mkdir -p bosh-on-k8s
-pushd bosh-on-k8s
+mkdir -p $BASE_DIR
+pushd $BASE_DIR
   if [ ! -d "$BOSH_DEPLOYMENT" ]; then
     echo "Cloning bosh-deployment into: $BOSH_DEPLOYMENT"
-    git clone git@github.com:loewenstein/bosh-deployment.git
+    git clone https://github.com/loewenstein/bosh-deployment.git
     pushd bosh-deployment
       git checkout origin/kubernetes
     popd
