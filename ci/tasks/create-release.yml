@@ -1,0 +1,17 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: loewenstein/main-bosh
+
+inputs:
+  - name: cpi-src
+  - name: dev-version-semver
+
+outputs:
+  - name: dev-release
+
+run:
+  path: cpi-src/ci/tasks/create-release.sh

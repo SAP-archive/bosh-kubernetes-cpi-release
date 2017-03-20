@@ -3,6 +3,7 @@ groups:
 - name: bosh-kubernetes-cpi-release
   jobs:
   - build
+  - create-release
   # - release
 
 jobs:
@@ -10,13 +11,31 @@ jobs:
   serial: true
   plan:
   - aggregate:
-    - {trigger: true, get: cpi-src}
+    - get: cpi-src
+      trigger: true
 
-  - task: compile
-    file: cpi-src/ci/tasks/compile.yml
+  - task: build
+    file: cpi-src/ci/tasks/build.yml
 
-  - task: test-unit
-    file: cpi-src/ci/tasks/test-unit.yml
+- name: create-release
+  serial: true
+  plan:
+  - aggregate:
+      - get: cpi-src
+        trigger: true
+        passed:
+          - build
+      - get: dev-version-semver
+        params:
+          bump: patch
+
+  - task: create-release
+    file: cpi-src/ci/tasks/create-release.yml
+  - put: dev-release
+    params:
+      file: dev-release/bosh-kubernetes-cpi\.*\.tgz
+  - put: dev-version-semver
+    params: {file: dev-version-semver/number}
 
 resources:
   - name: cpi-src
@@ -29,3 +48,22 @@ resources:
         - .final_builds/**
         - docs/**
         - README.md
+
+  - name: dev-version-semver
+    type: semver
+    source:
+      key:                current-dev-version
+      initial_version: 0.0.0
+      bucket:             {{pipeline_bucket_name}}
+      region_name: eu-central-1
+      access_key_id:      {{pipeline_bucket_access_key}}
+      secret_access_key:  {{pipeline_bucket_secret_key}}
+
+  - name: dev-release
+    type: s3
+    source:
+      regexp: main/dev-releases/bosh-kubernetes-cpi\.([0-9.]+)\.tgz
+      bucket: {{pipeline_bucket_name}}
+      region_name: eu-central-1
+      access_key_id:      {{pipeline_bucket_access_key}}
+      secret_access_key:  {{pipeline_bucket_secret_key}}
