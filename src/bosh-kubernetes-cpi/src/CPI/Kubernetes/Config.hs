@@ -97,7 +97,7 @@ data RawConfig = RawConfig {
 
 instance FromJSON RawConfig where
   parseJSON (Object v) = RawConfig    <$>
-                         v .: "cluster-access" <*>
+                         v .: "access" <*>
                          v .: "agent"
 
   parseJSON invalid    = typeMismatch "Config" invalid
@@ -130,6 +130,6 @@ instance FromJSON RawCredentials where
                          <$> v .: "token"
                       <|> RawClientCertificate
                          <$> v .: "certificate"
-                         <*> v .: "private-key"
+                         <*> v .: "private_key"
 
   parseJSON invalid    = typeMismatch "Credentials" invalid

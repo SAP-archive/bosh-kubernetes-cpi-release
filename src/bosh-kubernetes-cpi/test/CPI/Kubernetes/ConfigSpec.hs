@@ -28,12 +28,12 @@ import qualified Servant.Common.BaseUrl as Url
 spec :: Spec
 spec =
   describe "parseConfig" $ do
-    context "given an explicit cluster-access" $ do
+    context "given an explicit access" $ do
       let rawConfig :: (ToJSON a, ?creds :: a) => ByteString
           rawConfig = rawConfig' ?creds
           rawConfig' creds =  toStrict $ encode [aesonQQ|
         {
-          "cluster-access": {
+          "access": {
             "server": "https://my.kubernetes.io:4443",
             "namespace": "default",
             "credentials": #{creds}
@@ -55,7 +55,7 @@ spec =
         let ?creds = [aesonQQ|
           {
             "certificate": "certificate",
-            "private-key": #{privateKey}
+            "private_key": #{privateKey}
           }
         |]
         it "should parse credentials" $ do
@@ -69,10 +69,10 @@ spec =
           config <- parseConfig rawConfig
           Token token <- credentials $ clusterAccess config
           token `shouldBe` "xxxxx-xxxxx-xxxxx-xxxxx"
-    context "given cluster-access of type ServiceAccount" $ do
+    context "given access of type ServiceAccount" $ do
       let rawConfig = toStrict $ encode [aesonQQ|
         {
-          "cluster-access": "ServiceAccount",
+          "access": "ServiceAccount",
           "agent": {}
         }
       |]

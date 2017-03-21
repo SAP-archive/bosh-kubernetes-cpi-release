@@ -36,7 +36,7 @@ spec = do
                     {
                       "name": "my-port",
                       "port": 22,
-                      "nodePort": 30022
+                      "node_port": 30022
                     }
                   ]
                 }

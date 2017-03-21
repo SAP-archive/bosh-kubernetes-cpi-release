@@ -92,12 +92,16 @@ makeLenses ''ServiceType
 makeLenses ''ServicePort
 
 $(deriveJSON defaultOptions{fieldLabelModifier =
-               fieldLabelMap [
+              fieldLabelMap [
                           ("serviceName", "name")
                         , ("serviceType", "type")
                         , ("servicePorts", "ports")]}
             ''Service)
-$(deriveJSON defaultOptions{fieldLabelModifier = fieldLabelMap [("portName", "name")]} ''ServicePort)
+$(deriveJSON defaultOptions{fieldLabelModifier =
+              fieldLabelMap [
+                          ("portName", "name")
+                        , ("nodePort", "node_port")]}
+              ''ServicePort)
 
 
 createServices :: VmProperties -> [Kubernetes.Service]
