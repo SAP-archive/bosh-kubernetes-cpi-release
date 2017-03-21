@@ -62,7 +62,7 @@ jobs:
       params:
         file: release-version-semver/number
 
-    - put: bosh-cpi-src-out
+    - put: cpi-src-out
       params:
         repository: promote/repo
         rebase: true,

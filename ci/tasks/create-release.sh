@@ -8,5 +8,5 @@ semver=`cat dev-version-semver/number`
 pushd cpi-src
   bosh create-release \
     --version $semver \
-    --tarball $DEV_RELEASE/bosh-kubernetes-cpi.$semver.tgz
+    --tarball $DEV_RELEASE/bosh-kubernetes-cpi-$semver.tgz
 popd
