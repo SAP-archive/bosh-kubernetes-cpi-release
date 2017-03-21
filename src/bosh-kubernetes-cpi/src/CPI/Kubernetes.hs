@@ -70,7 +70,12 @@ instance Base.MonadCpi Config IO where
        FilePath
     -> Base.StemcellProperties
     -> Base.Cpi Config IO Base.StemcellId
-  createStemcell _ _ = return $ Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent"
+  createStemcell _ (Base.StemcellProperties properties) = do
+    let imageId = properties ^. key "image"._String
+    if imageId == "" then
+      throwM $ Base.CloudError "Unrecognized stemcell. Should provide an 'image' id."
+    else
+      pure $ Base.StemcellId imageId
 
   createVm ::
        Base.AgentId
