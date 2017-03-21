@@ -32,7 +32,9 @@ set -x
 
 echo "finalizing CPI release..."
 bosh finalize-release $DEV_RELEASE/*.tgz \
-  --version $version \
+  --version $version
+
+bosh create-release releases/bosh-kubernetes-cpi/bosh-kubernetes-cpi-${version}.yml
   --tarball final-release/bosh-kubernetes-cpi-$version.tgz
 
 rm config/private.yml
