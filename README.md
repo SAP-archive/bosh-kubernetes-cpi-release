@@ -23,7 +23,7 @@ Kubernetes currently only supports *dynamic networks*.
 ### Minikube
 - Start minikube with appropriate configuration
 ```
-$ minikube start --cpus 3 --memory 4096 --disk-size 80g --vm-driver xhyve
+$ minikube start --cpus 3 --memory 4096 --disk-size 80g --vm-driver virtualbox
 ```
 - Prepare Kubernetes
 ```
