@@ -76,6 +76,10 @@ instance Base.MonadCpi Config IO where
       throwM $ Base.CloudError "Unrecognized stemcell. Should provide an 'image' id."
     else
       pure $ Base.StemcellId imageId
+  deleteStemcell ::
+       Base.StemcellId
+    -> Base.Cpi Config IO ()
+  deleteStemcell _ = pure ()
 
   createVm ::
        Base.AgentId
