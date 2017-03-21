@@ -33,7 +33,7 @@ jobs:
     file: cpi-src/ci/tasks/create-release.yml
   - put: dev-release
     params:
-      file: dev-release/bosh-kubernetes-cpi\.*\.tgz
+      file: dev-release/bosh-kubernetes-cpi-*\.tgz
   - put: dev-version-semver
     params: {file: dev-version-semver/number}
 
@@ -71,7 +71,7 @@ jobs:
 
     - put: final-release
       params:
-        file: final-release/bosh-kubernetes-cpi\.*\.tgz
+        file: final-release/bosh-kubernetes-cpi-*\.tgz
 
 resources:
   - name: cpi-src
@@ -123,8 +123,8 @@ resources:
   - name: release-version-semver
     type: semver
     source:
-      key:                release-current-version
-      initial_version: 5.0.0
+      key:                current-release-version
+      initial_version: 4.0.0
       bucket:             {{pipeline_bucket_name}}
       region_name: eu-central-1
       access_key_id:      {{pipeline_bucket_access_key}}
