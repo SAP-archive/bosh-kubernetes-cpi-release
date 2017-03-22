@@ -31,7 +31,7 @@ pushd $BASE_DIR
       --client-secret $(bosh int ./outer-bosh/creds.yml --path /admin_password)
   bosh -e outer-bosh \
       upload-release \
-      https://github.com/SAP/bosh-kubernetes-cpi-release/releases/download/v5/bosh-kubernetes-cpi-5-alpha.tgz \
+      https://github.com/SAP/bosh-kubernetes-cpi-release/releases/download/v5/bosh-kubernetes-cpi-5.tgz \
       --client admin \
       --client-secret $(bosh int ./outer-bosh/creds.yml --path /admin_password)
 
