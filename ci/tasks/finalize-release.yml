@@ -16,6 +16,6 @@ outputs:
 run:
   path: cpi-src/ci/tasks/finalize-release.sh
 params:
-  aws_access_key_id:      replace-me
-  aws_secret_access_key:  replace-me
-  release_version_suffix: replace-me
+  aws_access_key_id:      ""
+  aws_secret_access_key:  ""
+  release_version_suffix: ""

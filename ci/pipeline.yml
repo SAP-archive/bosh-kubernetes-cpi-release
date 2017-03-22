@@ -57,7 +57,6 @@ jobs:
       params:
         aws_access_key_id: {{kubernetes_cpi_blobs_access_key}}
         aws_secret_access_key: {{kubernetes_cpi_blobs_secret_key}}
-        release_version_suffix: "-alpha"
     - put: release-version-semver
       params:
         file: release-version-semver/number
