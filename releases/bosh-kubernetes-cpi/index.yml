@@ -5,6 +5,8 @@ builds:
     version: 3-alpha
   42642636-a173-4ff3-4b31-0e93805417e4:
     version: 4-alpha
+  63c08c97-b0df-4f9a-4bbb-039c537bb4ba:
+    version: "5"
   a3d060f0-2241-4321-45f9-035986961367:
     version: 1-alpha
 format-version: "2"
