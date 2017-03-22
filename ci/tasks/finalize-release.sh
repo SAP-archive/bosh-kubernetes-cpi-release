@@ -7,6 +7,7 @@ set -e -x
 : {release_version_suffix:=""}
 
 DEV_RELEASE=$PWD/dev-release
+FINAL_RELEASE=$PWD/final-release
 
 # Creates an integer version number from the semantic version format
 # May be changed when we decide to fully use semantic versions for releases
@@ -35,7 +36,7 @@ bosh finalize-release $DEV_RELEASE/*.tgz \
   --version $version
 
 bosh create-release releases/bosh-kubernetes-cpi/bosh-kubernetes-cpi-${version}.yml \
-  --tarball final-release/bosh-kubernetes-cpi-$version.tgz
+  --tarball $FINAL_RELEASE/bosh-kubernetes-cpi-$version.tgz
 
 rm config/private.yml
 
