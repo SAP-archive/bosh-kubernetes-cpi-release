@@ -31,14 +31,14 @@ pushd $BASE_DIR
       --client-secret $(bosh int ./outer-bosh/creds.yml --path /admin_password)
   bosh -e outer-bosh \
       upload-release \
-      https://github.com/SAP/bosh-kubernetes-cpi-release/releases/download/v3-alpha/bosh-kubernetes-cpi-3-alpha.tgz \
+      https://github.com/SAP/bosh-kubernetes-cpi-release/releases/download/v5/bosh-kubernetes-cpi-5-alpha.tgz \
       --client admin \
       --client-secret $(bosh int ./outer-bosh/creds.yml --path /admin_password)
 
   echo "Uploading stemcell..."
   bosh -e outer-bosh \
       upload-stemcell \
-      https://github.com/SAP/bosh-kubernetes-cpi-release/releases/download/v1-alpha/bosh-stemcell-3363.9-kubernetes-ubuntu-trusty-go_agent.tgz \
+      https://s3.eu-central-1.amazonaws.com/bosh-kubernetes-cpi-stemcells/bosh-stemcell-3363.9-kubernetes-ubuntu-trusty-go_agent.tgz \
       --client admin \
       --client-secret $(bosh int ./outer-bosh/creds.yml --path /admin_password)
 
