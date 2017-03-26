@@ -60,10 +60,10 @@ executable bosh-kubernetes-cpi
                      , bosh-cpi-haskell
   default-language:    Haskell2010
 
-test-suite bosh-kubernetes-cpi-release-test
+test-suite unit
   type:                exitcode-stdio-1.0
   default-extensions:  OverloadedStrings
-  hs-source-dirs:      test
+  hs-source-dirs:      test/unit
   main-is:             Spec.hs
   other-modules:       CPI.Kubernetes.VmTypesSpec
                      , CPI.Kubernetes.ConfigSpec
@@ -72,7 +72,7 @@ test-suite bosh-kubernetes-cpi-release-test
                      , aeson-qq
                      , raw-strings-qq
                      , safe-exceptions
-                     , haskell-bosh-cpi
+                     , bosh-cpi-haskell
                      , bosh-kubernetes-cpi-release
                      , servant-client
                      , bytestring
