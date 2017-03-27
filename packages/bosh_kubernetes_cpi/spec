@@ -13,7 +13,7 @@ files:
   - bosh-kubernetes-cpi/Setup.hs
   - bosh-kubernetes-cpi/stack.yaml
   - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/src/**/*
-  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/haskell-bosh-cpi.cabal
+  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/bosh-cpi-haskell.cabal
   - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/Setup.hs
   - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/LICENSE
   - bosh-kubernetes-cpi/dependencies/haskell-kubernetes/lib/**/*
