@@ -24,6 +24,14 @@ library
                      , CPI.Kubernetes.Networks
                      , CPI.Kubernetes.VmTypes
                      , CPI.Kubernetes.Secrets
+                     , CPI.Kubernetes.Action.CreateVm
+                     , Resource
+                     , CPI.Kubernetes.Resource.Servant
+                     , CPI.Kubernetes.Resource.Pod
+                     , CPI.Kubernetes.Resource.Secret
+                     , CPI.Kubernetes.Resource.Stub.State
+                     , CPI.Kubernetes.Resource.Stub.Pod
+                     , CPI.Kubernetes.Resource.Stub.Secret
   build-depends:       base >= 4.7 && < 5
                      , bosh-cpi-haskell
                      , mtl
@@ -36,6 +44,7 @@ library
                      , containers
                      , unordered-containers
                      , exceptions
+                     , safe-exceptions
                      , haskell-kubernetes
                      , servant
                      , servant-client
@@ -63,12 +72,39 @@ executable bosh-kubernetes-cpi
 test-suite unit
   type:                exitcode-stdio-1.0
   default-extensions:  OverloadedStrings
+                     , ScopedTypeVariables
   hs-source-dirs:      test/unit
   main-is:             Spec.hs
   other-modules:       CPI.Kubernetes.VmTypesSpec
                      , CPI.Kubernetes.ConfigSpec
+                     , CPI.Kubernetes.Action.CreateVmSpec
   build-depends:       base
                      , hspec
+                     , aeson-qq
+                     , raw-strings-qq
+                     , safe-exceptions
+                     , bosh-cpi-haskell
+                     , haskell-kubernetes
+                     , bosh-kubernetes-cpi-release
+                     , servant-client
+                     , bytestring
+                     , aeson
+                     , lens
+                     , text
+                     , mtl
+                     , unordered-containers
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  default-language:    Haskell2010
+
+test-suite stub
+  type:                exitcode-stdio-1.0
+  default-extensions:  OverloadedStrings
+  hs-source-dirs:      test/stub
+  main-is:             Spec.hs
+  other-modules:       PodSpec
+  build-depends:       base
+                     , hspec
+                     , http-types
                      , aeson-qq
                      , raw-strings-qq
                      , safe-exceptions
@@ -77,9 +113,12 @@ test-suite unit
                      , servant-client
                      , bytestring
                      , aeson
+                     , lens
                      , text
                      , mtl
                      , unordered-containers
+                     , tls
+                     , haskell-kubernetes
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 

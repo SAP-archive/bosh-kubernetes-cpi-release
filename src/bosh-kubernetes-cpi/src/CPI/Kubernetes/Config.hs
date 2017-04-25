@@ -6,6 +6,7 @@
 
 module CPI.Kubernetes.Config(
     Config(..)
+  , HasConfig(..)
   , parseConfig
   , ClusterAccess(..)
   , Credentials(..)
@@ -27,9 +28,18 @@ import qualified Data.Text                as Text
 import           Data.Text.Encoding       (decodeUtf8, encodeUtf8)
 import           Data.Yaml
 import           GHC.Generics
+
 import           Network.TLS              (Credential,
                                            credentialLoadX509FromMemory)
 import qualified Servant.Common.BaseUrl   as Url
+
+class HasConfig a where
+  asConfig :: a -> Config
+  fromConfig :: Config -> a
+
+instance HasConfig Config where
+  asConfig = id
+  fromConfig = id
 
 parseCredentials :: (MonadThrow m) => RawCredentials -> m Credentials
 parseCredentials (RawClientCertificate rawCertificate rawPrivateKey) = do
