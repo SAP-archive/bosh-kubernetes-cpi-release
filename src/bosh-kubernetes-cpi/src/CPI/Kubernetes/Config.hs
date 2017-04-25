@@ -11,24 +11,25 @@ module CPI.Kubernetes.Config(
   , Credentials(..)
 ) where
 
-import           Prelude                hiding (readFile)
+import           Prelude                  hiding (readFile)
 
-import qualified CPI.Base               as Base
+import qualified CPI.Base                 as Base
 
 import           Control.Applicative
 import           Control.Monad.Catch
+import           Control.Monad.FileSystem
 import           CPI.Base.System
 import           Data.Aeson.Types
-import           Data.ByteString        (ByteString)
-import qualified Data.ByteString        as BS
-import           Data.Text              (Text)
-import qualified Data.Text              as Text
-import           Data.Text.Encoding     (decodeUtf8, encodeUtf8)
+import           Data.ByteString          (ByteString)
+import qualified Data.ByteString          as BS
+import           Data.Text                (Text)
+import qualified Data.Text                as Text
+import           Data.Text.Encoding       (decodeUtf8, encodeUtf8)
 import           Data.Yaml
 import           GHC.Generics
-import           Network.TLS            (Credential,
-                                         credentialLoadX509FromMemory)
-import qualified Servant.Common.BaseUrl as Url
+import           Network.TLS              (Credential,
+                                           credentialLoadX509FromMemory)
+import qualified Servant.Common.BaseUrl   as Url
 
 parseCredentials :: (MonadThrow m) => RawCredentials -> m Credentials
 parseCredentials (RawClientCertificate rawCertificate rawPrivateKey) = do
@@ -75,9 +76,9 @@ data Config = Config {
 }
 
 data ClusterAccess = ClusterAccess {
-    server      :: forall m. (FileSystem m) => m Url.BaseUrl
-  , credentials :: forall m. (FileSystem m) => m Credentials
-  , namespace   :: forall m. (FileSystem m) => m Text
+    server      :: forall m. (MonadFileSystem m) => m Url.BaseUrl
+  , credentials :: forall m. (MonadFileSystem m) => m Credentials
+  , namespace   :: forall m. (MonadFileSystem m) => m Text
 }
 
 data Credentials = ClientCertificate Credential

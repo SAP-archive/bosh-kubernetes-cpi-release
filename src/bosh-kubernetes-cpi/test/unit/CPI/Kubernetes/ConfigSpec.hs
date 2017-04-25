@@ -1,8 +1,7 @@
-{-# LANGUAGE FlexibleInstances          #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE ImplicitParams             #-}
-{-# LANGUAGE QuasiQuotes                #-}
-{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE FlexibleInstances   #-}
+{-# LANGUAGE ImplicitParams      #-}
+{-# LANGUAGE QuasiQuotes         #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module CPI.Kubernetes.ConfigSpec(spec) where
 
@@ -13,16 +12,18 @@ import           Test.Hspec
 import           Text.RawString.QQ
 
 import           Data.Aeson
-import           Data.ByteString.Lazy   (fromStrict, toStrict)
+import           Data.ByteString.Lazy          (fromStrict, toStrict)
 
 
 import           Control.Exception.Safe
 import           Control.Monad.State
-import           Data.ByteString        (ByteString)
-import           Data.HashMap.Strict    (HashMap, (!))
-import qualified Data.HashMap.Strict    as HashMap
-import           Data.Text              (Text)
-import qualified Servant.Common.BaseUrl as Url
+import           Control.Monad.Stub.FileSystem
+import           Control.Monad.Stub.StubMonad
+import           Data.ByteString               (ByteString)
+import           Data.HashMap.Strict           (HashMap, (!))
+import qualified Data.HashMap.Strict           as HashMap
+import           Data.Text                     (Text)
+import qualified Servant.Common.BaseUrl        as Url
 
 
 spec :: Spec
@@ -67,8 +68,8 @@ spec =
         let ?creds = [aesonQQ| { "token": "xxxxx-xxxxx-xxxxx-xxxxx" } |]
         it "should parse credentials" $ do
           config <- parseConfig rawConfig
-          Token token <- credentials $ clusterAccess config
-          token `shouldBe` "xxxxx-xxxxx-xxxxx-xxxxx"
+          Token credentials <- credentials $ clusterAccess config
+          credentials `shouldBe` "xxxxx-xxxxx-xxxxx-xxxxx"
     context "given access of type ServiceAccount" $ do
       let rawConfig = toStrict $ encode [aesonQQ|
         {
@@ -81,8 +82,7 @@ spec =
             , ("/var/run/secrets/kubernetes.io/serviceaccount/token", "xxxxx-xxxxx-xxxxx-xxxxx")]
       it "should read namespace from service account" $ do
         config <- parseConfig rawConfig
-        namespace' <- runTestFileSystem fileSystem $
-            namespace $ clusterAccess config
+        namespace' <- runStubTResult () fileSystem (namespace $ clusterAccess config :: Stub Text)
         namespace' `shouldBe` "default"
       it "should use 'https://kubernetes' as server url" $ do
         config <- parseConfig rawConfig
@@ -91,27 +91,17 @@ spec =
         server' `shouldBe` expectedServer
       it "should read token from service account" $ do
         config <- parseConfig rawConfig
-        Token token <- runTestFileSystem fileSystem $
-            credentials $ clusterAccess config
-        token `shouldBe` "xxxxx-xxxxx-xxxxx-xxxxx"
+        Token credentials <- runStubTResult () fileSystem (credentials $ clusterAccess config :: Stub Credentials)
+        credentials `shouldBe` "xxxxx-xxxxx-xxxxx-xxxxx"
 
-runTestFileSystem :: s -> TestFileSystem s b -> IO b
-runTestFileSystem content f = do
-  result <- unTestSystem f `evalStateT` content
-  pure result
+type Stub a = StubT () SystemState () IO a
 
-newtype TestFileSystem state a = TestFileSystem {
-  unTestSystem :: StateT state IO a
-} deriving (Functor, Applicative, Monad, MonadState state, MonadThrow, MonadCatch)
+instance HasFiles SystemState where
+  asFiles = fileSystem
 
 data SystemState = SystemState {
   fileSystem :: HashMap Text ByteString
 }
-
-instance FileSystem (TestFileSystem SystemState) where
-  readFile path = do
-    fs <- gets fileSystem
-    pure $ fs ! path
 
 privateKey :: Text
 privateKey = [r|
