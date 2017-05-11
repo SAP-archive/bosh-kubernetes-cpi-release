@@ -47,7 +47,7 @@ import           Control.Lens.Operators
 import           Control.Monad.Console
 import           Control.Monad.FileSystem
 import           Control.Monad.Log
-import           Control.Monad.Wait                (MonadWait (..))
+import           Control.Monad.Wait
 import           Data.Aeson
 import           Data.ByteString.Lazy              (toStrict)
 import           Data.Semigroup
@@ -86,19 +86,7 @@ instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem
     logDebug $ "Delete pod '" <> namespace <> "/" <> name <> "'"
     restCall $ deleteNamespacedPod namespace name Nothing (mkDeleteOptions 0)
 
-  waitForPod namespace name f = do
-    logDebug $ "Waiting for pod '" <> namespace <> "/" <> name <> "'"
-
-    go 10
-      where
-        go 0 = throwM $ CloudError "Timeout waiting for pod"
-        go n = do
-          mPod <- getPod namespace name
-          if isJust mPod && f (fromJust mPod)
-            then pure (fromJust mPod)
-            else do
-              wait 1000
-              go $ n - 1
+  waitForPod namespace name predicate = waitFor (WaitConfig (Retry 10) 1000) (getPod namespace name) predicate
 
 newPod :: Text -> Container -> Pod
 newPod name container =

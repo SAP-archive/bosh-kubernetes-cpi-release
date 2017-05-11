@@ -30,12 +30,13 @@ import           Control.Monad.Stub.Console
 import           Control.Monad.Stub.FileSystem
 import           Control.Monad.Stub.StubMonad
 
+import           Control.Monad.Stub.Wait
 import           CPI.Kubernetes.Action.CreateVm
 import           CPI.Kubernetes.Config
 import           CPI.Kubernetes.Resource.Pod
 import           CPI.Kubernetes.Resource.Stub.Pod
 import           CPI.Kubernetes.Resource.Stub.Secret
-import           CPI.Kubernetes.Resource.Stub.State
+import           CPI.Kubernetes.Resource.Stub.State  hiding (NoOutput)
 import           Resource
 
 instance HasStdin Config where
@@ -51,6 +52,8 @@ instance HasStdout NoOutput where
   asStdout = mempty
 instance HasStderr NoOutput where
   asStderr = mempty
+instance HasWaitCount NoOutput where
+  asWaitCount = mempty
 
 spec :: Spec
 spec = describe "createVm" $ do

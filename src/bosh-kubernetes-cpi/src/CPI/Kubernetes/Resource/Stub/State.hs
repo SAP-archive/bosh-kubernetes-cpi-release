@@ -5,39 +5,34 @@
 
 module CPI.Kubernetes.Resource.Stub.State(
     KubeState(..)
-  , ResourceMap(..)
-  , HasTicks(..)
+  , ResourceMap
   , HasPods(..)
   , HasSecrets(..)
   , emptyKube
   , StubConfig(..)
+  , HasImages(..)
+  , emptyStubConfig
+  , NoOutput(..)
+  , StubOutput(..)
+  , emptyStubOutput
+  , NoInput(..)
 ) where
 
-import           CPI.Base
-import           Prelude                       (Applicative, IO, error, (.))
+import           Prelude                       (Int, const, error)
 
 import           Data.HashMap.Strict           (HashMap)
 import qualified Data.HashMap.Strict           as HashMap
+import           Data.HashSet                  (HashSet)
+import qualified Data.HashSet                  as HashSet
+import           Data.Monoid
 import           Data.Text                     (Text)
 
-import           Control.Exception.Safe
-import           Control.Monad.Arguments
-import           Control.Monad.Console
-import           Control.Monad.FileSystem
-import           Control.Monad.Reader
-import qualified Control.Monad.State           as State
-
-
+import           Control.Monad.Stub.Console
 import           Control.Monad.Stub.FileSystem
-import           Control.Monad.Stub.StubMonad
+import           Control.Monad.Stub.Wait
 
 import           Kubernetes.Model.V1.Pod       (Pod)
-import qualified Kubernetes.Model.V1.Pod       as Pod
-import           Kubernetes.Model.V1.Secret    (Secret, mkSecret)
-import qualified Kubernetes.Model.V1.Secret    as Secret
-
-class HasTicks a r where
-  asTicks :: a -> [r -> r]
+import           Kubernetes.Model.V1.Secret    (Secret)
 
 type ResourceMap r = HashMap (Text, Text) r
 
@@ -65,15 +60,67 @@ instance HasFiles KubeState where
   asFiles = error "No file system available"
 
 data KubeState = KubeState {
-    stubConfig :: StubConfig
-  , pods       :: HashMap (Text, Text) Pod
-  , secrets    :: HashMap (Text, Text) Secret
+    pods    :: HashMap (Text, Text) Pod
+  , secrets :: HashMap (Text, Text) Secret
 }
 
+emptyKube :: KubeState
 emptyKube = KubeState {
-    stubConfig = StubConfig
-  , pods = HashMap.empty
+    pods = HashMap.empty
   , secrets = HashMap.empty
 }
 
-data StubConfig = StubConfig
+class HasImages a where
+  asImages :: a -> HashSet Text
+
+data StubConfig = StubConfig {
+  images :: HashSet Text
+}
+
+emptyStubConfig :: StubConfig
+emptyStubConfig = StubConfig {
+  images = HashSet.empty
+}
+
+instance HasImages StubConfig where
+  asImages = images
+
+instance HasStdin StubConfig
+
+data StubOutput = StubOutput {
+    waitCount :: [Int]
+}
+
+emptyStubOutput :: StubOutput
+emptyStubOutput = StubOutput {
+    waitCount = []
+}
+
+instance Monoid StubOutput where
+  mempty = emptyStubOutput
+  mappend left right = emptyStubOutput {
+    waitCount = waitCount left <> waitCount right
+  }
+
+instance HasWaitCount StubOutput where
+  asWaitCount n = emptyStubOutput {
+    waitCount = [n]
+  }
+
+instance HasStdout StubOutput
+instance HasStderr StubOutput
+
+data NoOutput = NoOutput
+
+instance Monoid NoOutput where
+  mempty = NoOutput
+  mappend _ _ = NoOutput
+
+instance HasStdout NoOutput
+instance HasStderr NoOutput
+instance HasWaitCount NoOutput
+
+data NoInput = NoInput
+
+instance HasStdin NoInput where
+  asStdin = const ""

@@ -124,17 +124,6 @@ spec =
             (\_ -> createPod "default" pod)
         `shouldThrow` (servantErrorWithStatusCode 409)
 
-    context "when image does not exist" $ do
-      let pod = newPod "test" container
-          container = newContainer "busybox" "does-not-exist"
-      it "should time out waiting for state RUNNING" $ do
-        void $ run $
-          bracket
-            (createPod "default" pod)
-            (\_ -> deletePod "default" "test")
-            (\_ -> waitForPod "default" "test" (const False))
-        `shouldThrow` (cloudErrorWithMessage "Timeout waiting for pod")
-
 servantErrorWithStatusCode :: Int -> Selector ServantError
 servantErrorWithStatusCode expectedStatusCode (FailureResponse (Status code _) _ _) = expectedStatusCode == code
 
@@ -160,9 +149,8 @@ run f = do
   if cluster then
           config `runResource` f
         else do
-          (result, _, _::()) <- runStubT undefined emptyKube f
+          (result, _, _::NoOutput) <- runStubT emptyStubConfig emptyKube f
           pure result
-          -- runResourceStub undefined emptyKube f
 
 config :: Config
 config = Config {

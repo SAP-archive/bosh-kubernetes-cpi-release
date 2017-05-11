@@ -4,17 +4,8 @@
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
-module CPI.Kubernetes.Resource.Stub.Pod(
-    Pod
-  , PodList
-) where
 
-import           CPI.Base.Errors                        (CloudError (..))
-import           CPI.Kubernetes.Config
-import           CPI.Kubernetes.Resource.Pod
-import           CPI.Kubernetes.Resource.Servant
-import           CPI.Kubernetes.Resource.Stub.State
-import           Resource
+module CPI.Kubernetes.Resource.Stub.Pod() where
 
 import           Kubernetes.Model.V1.Container          (Container, mkContainer)
 import qualified Kubernetes.Model.V1.Container          as Container
@@ -44,28 +35,27 @@ import           Kubernetes.Api.ApivApi                 (createNamespacedPod,
                                                          readNamespacedPod,
                                                          replaceNamespacedPod)
 
-import           Control.Monad.Reader
 import qualified Control.Monad.State                    as State
 import           Data.Maybe
 
 import           Control.Exception.Safe
 import           Control.Lens
-import           Control.Lens.Operators
-import           Control.Monad.Log
-import           Data.Aeson
-import           Data.ByteString.Lazy                   (toStrict)
-import           Data.Semigroup
-import           Data.Text                              (Text)
-import qualified Data.Text                              as Text
-import           Data.Text.Encoding                     (decodeUtf8)
+import           Network.HTTP.Types.Status
 import           Servant.Client
 
+import           CPI.Kubernetes.Resource.Pod
+
+import           Control.Monad.Stub.Console
 import           Control.Monad.Stub.StubMonad
+import           Control.Monad.Stub.Wait
+import           CPI.Kubernetes.Resource.Stub.State     (HasImages (..),
+                                                         HasPods (..))
+
+import           Control.Monad.Wait
 import           Data.HashMap.Strict                    (HashMap)
 import qualified Data.HashMap.Strict                    as HashMap
-import           Network.HTTP.Types.Status
 
-instance (MonadThrow m, Monoid w, HasPods s) => MonadPod (StubT r s w m) where
+instance (MonadThrow m, Monoid w, HasPods s, HasWaitCount w) => MonadPod (StubT r s w m) where
 
   createPod namespace pod = do
     pods <- State.gets asPods
@@ -114,14 +104,4 @@ instance (MonadThrow m, Monoid w, HasPods s) => MonadPod (StubT r s w m) where
     State.put undefined
     pure undefined
 
-  waitForPod namespace name f = do
-    -- ticks <- State.gets asTicks
-    -- pods <- State.gets asPods
-    -- mPod <- getPod namespace name
-    -- pods' <- case mPod of
-    --   Just pod -> do
-    --       foldl f pods ticks
-    --     where
-    --       f pods
-    --   Nothing  -> throwM $ CloudError "Timeout waiting for pod"
-    throwM $ CloudError "Timeout waiting for pod"
+  waitForPod namespace name predicate = waitFor (WaitConfig (Retry 10) 1000) (getPod namespace name) predicate
