@@ -21,6 +21,8 @@ import           Kubernetes.Model.V1.ObjectMeta      (ObjectMeta, mkObjectMeta)
 import qualified Kubernetes.Model.V1.ObjectMeta      as ObjectMeta
 import           Kubernetes.Model.V1.Pod             (Pod, mkPod)
 import qualified Kubernetes.Model.V1.Pod             as Pod
+import           Kubernetes.Model.V1.PodStatus             (PodStatus, mkPodStatus)
+import qualified Kubernetes.Model.V1.PodStatus             as PodStatus
 import           Kubernetes.Model.V1.PodList             (PodList, mkPodList)
 import qualified Kubernetes.Model.V1.PodList             as PodList
 import           Kubernetes.Model.V1.PodSpec         (PodSpec, mkPodSpec)
@@ -76,7 +78,7 @@ createVm agentId stemcell cloudProperties (Base.Networks networkSpec) diskLocali
                       & (Pod.metadata . _Just . ObjectMeta.labels) .~ Just (Any.Any labels)
                       & Pod.container.Container.securityContext .~ Just securityContext
     in createPod namespace pod
-  -- waitForPod namespace (Unwrapped agentId) (\pod -> True)
+  _ <- waitForPod namespace (Unwrapped agentId) (\pod -> pod ^. Pod.status._Just.PodStatus.phase == Just "Running")
   pure $ podName pod
     where
       podName :: Pod.Pod -> Base.VmId

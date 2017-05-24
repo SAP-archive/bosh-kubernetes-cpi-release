@@ -115,6 +115,19 @@ spec =
             lift $ (createdPod ^. Pod.status._Just.PodStatus.phase) `shouldBe` Just "Pending"
             )
 
+    it "creates a pod that will end up in state 'Running'" $ do
+      void $ run $ do
+        bracket
+          (do
+            _ <- createPod "default" pod
+            runningPod <- waitForPod "default" "test" (\pod -> pod ^. Pod.status._Just.PodStatus.phase == Just "Running")
+            pure (pod, runningPod))
+          (\_ -> do
+            deletePod "default" "test")
+          (\(pod, runningPod) -> do
+            lift $ (runningPod ^. Pod.status._Just.PodStatus.phase) `shouldBe` Just "Running"
+            )
+
     context "when a pod with the given name already exists" $
       it "throws ServantError reason 409 CONFLICT" $ do
         void $ run $

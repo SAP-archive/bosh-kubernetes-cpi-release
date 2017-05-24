@@ -35,6 +35,7 @@ library
   build-depends:       base >= 4.7 && < 5
                      , bosh-cpi-haskell
                      , mtl
+                     , hourglass
                      , aeson
                      , lens-aeson
                      , yaml

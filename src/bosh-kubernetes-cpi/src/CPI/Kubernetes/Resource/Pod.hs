@@ -48,8 +48,10 @@ import           Control.Monad.Console
 import           Control.Monad.FileSystem
 import           Control.Monad.Log
 import           Control.Monad.Wait
+
 import           Data.Aeson
 import           Data.ByteString.Lazy              (toStrict)
+import           Data.Hourglass
 import           Data.Semigroup
 import           Data.Text                         (Text)
 import qualified Data.Text                         as Text
@@ -86,7 +88,7 @@ instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem
     logDebug $ "Delete pod '" <> namespace <> "/" <> name <> "'"
     restCall $ deleteNamespacedPod namespace name Nothing (mkDeleteOptions 0)
 
-  waitForPod namespace name predicate = waitFor (WaitConfig (Retry 10) 1000) (getPod namespace name) predicate
+  waitForPod namespace name predicate = waitFor (WaitConfig (Retry 10) (Seconds 1)) (getPod namespace name) predicate
 
 newPod :: Text -> Container -> Pod
 newPod name container =

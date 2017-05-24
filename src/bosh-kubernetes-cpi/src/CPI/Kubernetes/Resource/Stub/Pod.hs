@@ -36,7 +36,9 @@ import           Kubernetes.Api.ApivApi                 (createNamespacedPod,
                                                          replaceNamespacedPod)
 
 import qualified Control.Monad.State                    as State
+import           Data.Hourglass
 import           Data.Maybe
+import           Data.Text                              (Text)
 
 import           Control.Exception.Safe
 import           Control.Lens
@@ -47,26 +49,30 @@ import           CPI.Kubernetes.Resource.Pod
 
 import           Control.Monad.Stub.Console
 import           Control.Monad.Stub.StubMonad
+import           Control.Monad.Stub.Time
 import           Control.Monad.Stub.Wait
 import           CPI.Kubernetes.Resource.Stub.State     (HasImages (..),
                                                          HasPods (..))
 
+import           Control.Monad.Time
 import           Control.Monad.Wait
+
 import           Data.HashMap.Strict                    (HashMap)
 import qualified Data.HashMap.Strict                    as HashMap
 
-instance (MonadThrow m, Monoid w, HasPods s, HasWaitCount w) => MonadPod (StubT r s w m) where
+instance (MonadThrow m, Monoid w, HasPods s, HasWaitCount w, HasTime s, HasTimeline s) => MonadPod (StubT r s w m) where
 
   createPod namespace pod = do
+    let podName = pod ^. name
     pods <- State.gets asPods
-    if isJust $ HashMap.lookup (namespace, pod ^. name) pods
+    if isJust $ HashMap.lookup (namespace, podName) pods
       then throwM FailureResponse {
         responseStatus = Status {
             statusCode = 409
         }
       }
       else pure ()
-    let pod' = status $ defaultServiceAccount pod
+    let pod' = (`status` "Pending") $ defaultServiceAccount pod
         defaultServiceAccount :: Pod -> Pod
         defaultServiceAccount pod =
           let
@@ -80,10 +86,17 @@ instance (MonadThrow m, Monoid w, HasPods s, HasWaitCount w) => MonadPod (StubT 
              & Pod.spec._Just.PodSpec.serviceAccountName .~ Just namespace
              & Pod.spec._Just.PodSpec.volumes.non [] %~ (\volumes -> volume <| volumes)
              & container.Container.volumeMounts.non [] %~ (\mounts -> volumeMount <| mounts)
-        status pod = pod
-          & Pod.status.non mkPodStatus.PodStatus.phase .~ Just "Pending"
-    let pods' = HashMap.insert (namespace, pod' ^. name) pod' pods
+        status :: Pod -> Text -> Pod
+        status pod status = pod
+          & Pod.status.non mkPodStatus.PodStatus.phase .~ Just status
+    let pods' = HashMap.insert (namespace, podName) pod' pods
     State.modify $ updatePods pods'
+    timestamp <- currentTime
+    State.modify $ withTimeline
+                 (\events ->
+                   HashMap.insert (timestamp + (Elapsed $ Seconds 1))
+                   [withPods $ HashMap.adjust (\pod -> status pod "Running") (namespace, podName)]
+                   events)
     pure pod'
 
   listPod namespace = do
@@ -104,4 +117,4 @@ instance (MonadThrow m, Monoid w, HasPods s, HasWaitCount w) => MonadPod (StubT 
     State.put undefined
     pure undefined
 
-  waitForPod namespace name predicate = waitFor (WaitConfig (Retry 10) 1000) (getPod namespace name) predicate
+  waitForPod namespace name predicate = waitFor (WaitConfig (Retry 10) (Seconds 1)) (getPod namespace name) predicate
