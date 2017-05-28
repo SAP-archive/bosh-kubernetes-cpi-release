@@ -88,7 +88,7 @@ instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem
     logDebug $ "Delete pod '" <> namespace <> "/" <> name <> "'"
     restCall $ deleteNamespacedPod namespace name Nothing (mkDeleteOptions 0)
 
-  waitForPod namespace name predicate = waitFor (WaitConfig (Retry 10) (Seconds 1)) (getPod namespace name) predicate
+  waitForPod namespace name predicate = waitFor (WaitConfig (Retry 20) (Seconds 1)) (getPod namespace name) predicate
 
 newPod :: Text -> Container -> Pod
 newPod name container =

@@ -117,4 +117,4 @@ instance (MonadThrow m, Monoid w, HasPods s, HasWaitCount w, HasTime s, HasTimel
     State.put undefined
     pure undefined
 
-  waitForPod namespace name predicate = waitFor (WaitConfig (Retry 10) (Seconds 1)) (getPod namespace name) predicate
+  waitForPod namespace name predicate = waitFor (WaitConfig (Retry 20) (Seconds 1)) (getPod namespace name) predicate
