@@ -21,6 +21,8 @@ Kubernetes currently only supports *dynamic networks*.
 ## How to use
 
 ### Minikube
+- Download [Minikube v0.15.0](https://github.com/kubernetes/minikube/releases/tag/v0.15.0)
+  - There are problems with newer Minikube / Kubernetes versions that I still have to figure out
 - Start minikube with appropriate configuration
 ```
 $ minikube start --cpus 3 --memory 4096 --disk-size 80g --vm-driver virtualbox
