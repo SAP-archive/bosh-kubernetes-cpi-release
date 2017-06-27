@@ -35,7 +35,9 @@ import           Kubernetes.Api.ApivApi                 (createNamespacedPod,
                                                          readNamespacedPod,
                                                          replaceNamespacedPod)
 
-import qualified Control.Monad.State                    as State
+import           Data.HashMap.Strict                    (HashMap)
+import qualified Data.HashMap.Strict                    as HashMap
+import           Data.HashSet
 import           Data.Hourglass
 import           Data.Maybe
 import           Data.Text                              (Text)
@@ -45,6 +47,7 @@ import           Control.Lens
 import           Network.HTTP.Types.Status
 import           Servant.Client
 
+import           CPI.Kubernetes.Resource.Metadata       (name)
 import           CPI.Kubernetes.Resource.Pod
 
 import           Control.Monad.Stub.Console
@@ -54,13 +57,12 @@ import           Control.Monad.Stub.Wait
 import           CPI.Kubernetes.Resource.Stub.State     (HasImages (..),
                                                          HasPods (..))
 
+import qualified Control.Monad.State                    as State
 import           Control.Monad.Time
 import           Control.Monad.Wait
 
-import           Data.HashMap.Strict                    (HashMap)
-import qualified Data.HashMap.Strict                    as HashMap
 
-instance (MonadThrow m, Monoid w, HasPods s, HasWaitCount w, HasTime s, HasTimeline s) => MonadPod (StubT r s w m) where
+instance (MonadThrow m, Monoid w, HasPods s, HasImages s, HasWaitCount w, HasTime s, HasTimeline s) => MonadPod (StubT r s w m) where
 
   createPod namespace pod = do
     let podName = pod ^. name
@@ -92,11 +94,16 @@ instance (MonadThrow m, Monoid w, HasPods s, HasWaitCount w, HasTime s, HasTimel
     let pods' = HashMap.insert (namespace, podName) pod' pods
     State.modify $ updatePods pods'
     timestamp <- currentTime
+    images <- State.gets asImages
     State.modify $ withTimeline
                  (\events ->
-                   HashMap.insert (timestamp + (Elapsed $ Seconds 1))
-                   [withPods $ HashMap.adjust (\pod -> status pod "Running") (namespace, podName)]
-                   events)
+                   if member (pod' ^. container.image) images
+                     then
+                       HashMap.insert (timestamp + (Elapsed $ Seconds 1))
+                       [withPods $ HashMap.adjust (\pod -> status pod "Running") (namespace, podName)]
+                       events
+                     else
+                       events)
     pure pod'
 
   listPod namespace = do

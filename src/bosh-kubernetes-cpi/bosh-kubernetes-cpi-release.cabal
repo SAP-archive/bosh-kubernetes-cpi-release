@@ -29,6 +29,7 @@ library
                      , CPI.Kubernetes.Resource.Servant
                      , CPI.Kubernetes.Resource.Pod
                      , CPI.Kubernetes.Resource.Secret
+                     , CPI.Kubernetes.Resource.Metadata
                      , CPI.Kubernetes.Resource.Stub.State
                      , CPI.Kubernetes.Resource.Stub.Pod
                      , CPI.Kubernetes.Resource.Stub.Secret
@@ -82,6 +83,7 @@ test-suite unit
   build-depends:       base
                      , hspec
                      , aeson-qq
+                     , lens-aeson
                      , raw-strings-qq
                      , safe-exceptions
                      , bosh-cpi-haskell
@@ -89,6 +91,7 @@ test-suite unit
                      , bosh-kubernetes-cpi-release
                      , servant-client
                      , bytestring
+                     , base64-bytestring
                      , aeson
                      , lens
                      , text
@@ -103,6 +106,7 @@ test-suite stub
   hs-source-dirs:      test/stub
   main-is:             Spec.hs
   other-modules:       PodSpec
+                     , SecretSpec
   build-depends:       base
                      , hspec
                      , http-types

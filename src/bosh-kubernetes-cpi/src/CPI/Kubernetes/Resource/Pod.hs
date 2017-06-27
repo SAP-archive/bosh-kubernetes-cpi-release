@@ -9,8 +9,8 @@ module CPI.Kubernetes.Resource.Pod(
   , MonadPod(..)
   , newPod
   , newContainer
-  , name
   , container
+  , image
 ) where
 
 import qualified CPI.Base                          as Base
@@ -19,6 +19,7 @@ import           CPI.Kubernetes.Config
 import           CPI.Kubernetes.Resource.Servant
 import           Resource
 
+import qualified Kubernetes.Model.V1.Any           as Any
 import           Kubernetes.Model.V1.Container     (Container, mkContainer)
 import qualified Kubernetes.Model.V1.Container     as Container
 import           Kubernetes.Model.V1.DeleteOptions (mkDeleteOptions)
@@ -103,11 +104,11 @@ newContainer :: Text -> Text -> Container
 newContainer name imageId =
   mkContainer name & Container.image .~ Just imageId
 
-name :: Traversal' Pod Text
-name = Pod.metadata._Just.ObjectMeta.name._Just
-
 spec :: Traversal' Pod PodSpec
 spec = Pod.spec._Just
 
 container :: Traversal' Pod Container
 container = spec.PodSpec.containers.ix 0
+
+image :: Traversal' Container Text
+image = Container.image._Just

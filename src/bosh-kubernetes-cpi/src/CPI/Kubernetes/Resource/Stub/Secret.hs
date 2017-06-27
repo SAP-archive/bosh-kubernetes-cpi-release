@@ -10,6 +10,7 @@ module CPI.Kubernetes.Resource.Stub.Secret(
 
 import           CPI.Base.Errors                     (CloudError (..))
 import           CPI.Kubernetes.Config
+import           CPI.Kubernetes.Resource.Metadata
 import           CPI.Kubernetes.Resource.Secret
 import           CPI.Kubernetes.Resource.Servant
 import           CPI.Kubernetes.Resource.Stub.State
@@ -30,20 +31,21 @@ import           Kubernetes.Api.ApivApi              (createNamespacedPod,
                                                       readNamespacedPod,
                                                       replaceNamespacedPod)
 
-import           Control.Monad.Reader
-import qualified Control.Monad.State                 as State
-
 import           Control.Exception.Safe
 import           Control.Lens
 import           Control.Lens.Operators
 import           Control.Monad.Log
+import           Control.Monad.Reader
+import qualified Control.Monad.State                 as State
+import           Servant.Client
+
 import           Data.Aeson
 import           Data.ByteString.Lazy                (toStrict)
+import           Data.HashMap.Strict                 as HashMap
 import           Data.Semigroup
 import           Data.Text                           (Text)
 import qualified Data.Text                           as Text
 import           Data.Text.Encoding                  (decodeUtf8)
-import           Servant.Client
 
 
 import           Control.Monad.Stub.StubMonad
@@ -52,7 +54,7 @@ import           Data.HashMap.Strict                 (HashMap, insert)
 instance (MonadThrow m, Monoid w, HasSecrets s) => MonadSecret (StubT r s w m) where
   createSecret namespace secret = do
     secrets <- State.gets asSecrets
-    let secrets' = insert (namespace, name secret) secret secrets
+    let secrets' = insert (namespace, secret ^. name) secret secrets
     State.modify $ updateSecrets secrets'
     pure secret
 
@@ -61,8 +63,8 @@ instance (MonadThrow m, Monoid w, HasSecrets s) => MonadSecret (StubT r s w m) w
     pure undefined
 
   getSecret namespace name = do
-    kube <- State.get
-    pure undefined
+    secrets <- State.gets asSecrets
+    pure $ (namespace, name) `HashMap.lookup` secrets
 
   updateSecret namespace pod = do
     kube <- State.get
@@ -70,8 +72,9 @@ instance (MonadThrow m, Monoid w, HasSecrets s) => MonadSecret (StubT r s w m) w
     pure undefined
 
   deleteSecret namespace name = do
-    kube <- State.get
-    State.put undefined
+    State.modify
+      $ withSecrets
+      $ id
     pure undefined
 
   waitForSecret namespace name f = do

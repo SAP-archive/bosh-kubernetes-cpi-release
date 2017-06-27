@@ -18,7 +18,7 @@ module CPI.Kubernetes.Resource.Stub.State(
   , NoInput(..)
 ) where
 
-import           Prelude                       (const, error, (.))
+import           Prelude                       (const, error)
 
 import           Data.HashMap.Strict           (HashMap)
 import qualified Data.HashMap.Strict           as HashMap
@@ -48,11 +48,13 @@ instance HasPods KubeState where
   asPods = pods
   updatePods newPods s = s {
     pods = newPods
-  }
+}
 
 class HasSecrets a where
   asSecrets :: a -> HashMap (Text, Text) Secret
   updateSecrets :: HashMap (Text, Text) Secret -> a -> a
+  withSecrets :: (ResourceMap Secret -> ResourceMap Secret) -> a -> a
+  withSecrets f a = f (asSecrets a) `updateSecrets` a
 
 instance HasSecrets KubeState where
   asSecrets = secrets
@@ -80,6 +82,7 @@ data KubeState = KubeState {
   , secrets :: HashMap (Text, Text) Secret
   , elapsed :: Elapsed
   , events  :: HashMap Elapsed [KubeState -> KubeState]
+  , images  :: HashSet Text
 }
 
 emptyKube :: KubeState
@@ -88,21 +91,18 @@ emptyKube = KubeState {
   , secrets = HashMap.empty
   , elapsed = 0
   , events = HashMap.empty
+  , images = HashSet.empty
 }
 
 class HasImages a where
   asImages :: a -> HashSet Text
 
-data StubConfig = StubConfig {
-  images :: HashSet Text
-}
+data StubConfig = StubConfig
 
 emptyStubConfig :: StubConfig
-emptyStubConfig = StubConfig {
-  images = HashSet.empty
-}
+emptyStubConfig = StubConfig
 
-instance HasImages StubConfig where
+instance HasImages KubeState where
   asImages = images
 
 instance HasStdin StubConfig

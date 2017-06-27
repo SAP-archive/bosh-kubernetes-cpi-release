@@ -8,7 +8,8 @@ module CPI.Kubernetes.Resource.Secret(
     Secret
   , SecretList
   , MonadSecret(..)
-  , name
+  , newSecret
+  , data'
 ) where
 
 import qualified CPI.Base                            as Base
@@ -18,10 +19,11 @@ import           CPI.Kubernetes.Resource.Servant
 import           Resource
 
 import           Kubernetes.Model.Unversioned.Status (Status)
+import qualified Kubernetes.Model.V1.Any             as Any
 import           Kubernetes.Model.V1.DeleteOptions   (mkDeleteOptions)
-import           Kubernetes.Model.V1.ObjectMeta      (ObjectMeta)
+import           Kubernetes.Model.V1.ObjectMeta      (ObjectMeta, mkObjectMeta)
 import qualified Kubernetes.Model.V1.ObjectMeta      as ObjectMeta
-import           Kubernetes.Model.V1.Secret          (Secret)
+import           Kubernetes.Model.V1.Secret          (Secret, mkSecret)
 import qualified Kubernetes.Model.V1.Secret          as Secret
 import           Kubernetes.Model.V1.SecretList      (SecretList)
 import qualified Kubernetes.Model.V1.SecretList      as SecretList
@@ -40,13 +42,15 @@ import           Control.Lens.Operators
 import           Control.Monad.Console
 import           Control.Monad.FileSystem
 import           Control.Monad.Log
+import           Servant.Client
+
 import           Data.Aeson
 import           Data.ByteString.Lazy                (toStrict)
+import qualified Data.HashMap.Strict                 as HashMap
 import           Data.Semigroup
 import           Data.Text                           (Text)
 import qualified Data.Text                           as Text
 import           Data.Text.Encoding                  (decodeUtf8)
-import           Servant.Client
 
 class (Monad m) => MonadSecret m where
   createSecret :: Text -> Secret -> m Secret
@@ -85,5 +89,12 @@ instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem
       Just secret -> pure $ if f secret then secret else secret
       Nothing     -> throwM $ CloudError ""
 
-name :: Secret -> Text
-name secret = secret ^. Secret.metadata._Just.ObjectMeta.name._Just
+newSecret :: Text -> Secret
+newSecret name =
+  mkSecret & Secret.metadata .~ Just metadata
+    where
+      metadata = mkObjectMeta
+          & ObjectMeta.name .~ Just name
+
+data' :: Traversal' Secret Object
+data' = Secret.data_.non (Any.Any HashMap.empty).Any.any
