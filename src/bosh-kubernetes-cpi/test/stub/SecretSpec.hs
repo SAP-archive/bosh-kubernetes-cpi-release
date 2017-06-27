@@ -18,8 +18,9 @@ import           Control.Monad
 import           Control.Monad.Trans
 import           Data.Maybe
 
-import           CPI.Base                               as Base
+import qualified CPI.Base                               as Base
 import           CPI.Kubernetes.Config
+import           CPI.Kubernetes.Resource.Metadata
 import           CPI.Kubernetes.Resource.Secret         (MonadSecret,
                                                          createSecret,
                                                          deleteSecret,
@@ -86,14 +87,14 @@ spec =
             lift $ createdSecretName `shouldBe` "test"
             secret' <- getSecret "default" "test"
             lift $ secret' `shouldSatisfy` isJust
-            lift $ (secret ^. Secret.name) `shouldBe` (createdSecret ^. Secret.name)
+            lift $ (secret ^. name) `shouldBe` (createdSecret ^. name)
             )
 
 servantErrorWithStatusCode :: Int -> Selector ServantError
 servantErrorWithStatusCode expectedStatusCode (FailureResponse (Status code _) _ _) = expectedStatusCode == code
 
-cloudErrorWithMessage :: Text -> Selector CloudError
-cloudErrorWithMessage expectedMessage (CloudError message) = expectedMessage == message
+cloudErrorWithMessage :: Text -> Selector Base.CloudError
+cloudErrorWithMessage expectedMessage (Base.CloudError message) = expectedMessage == message
 
 type MR a = (forall m . (MonadSecret (m IO), MonadTrans m, MonadMask (m IO), MonadThrow (m IO)) => (m IO) a)
 

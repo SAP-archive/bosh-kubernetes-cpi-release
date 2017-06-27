@@ -18,8 +18,9 @@ import           Control.Monad
 import           Control.Monad.Trans
 import           Data.Maybe
 
-import           CPI.Base                               as Base
+import qualified CPI.Base                               as Base
 import           CPI.Kubernetes.Config
+import           CPI.Kubernetes.Resource.Metadata
 import           CPI.Kubernetes.Resource.Pod            (MonadPod, createPod,
                                                          deletePod, getPod,
                                                          newContainer, newPod,
@@ -55,9 +56,9 @@ import           Resource
 import           Servant.Common.BaseUrl                 (BaseUrl, parseBaseUrl)
 
 
+import qualified Data.HashSet                           as HashSet
 import           Data.Text                              (Text)
 import qualified Data.Text                              as Text
-import qualified Data.HashSet as HashSet
 
 import           Control.Exception.Safe
 import           Control.Monad.FileSystem
@@ -86,7 +87,7 @@ spec =
             lift $ createdPodName `shouldBe` "test"
             pod' <- getPod "default" "test"
             lift $ pod' `shouldSatisfy` isJust
-            lift $ (pod ^. Pod.name) `shouldBe` (createdPod ^. Pod.name)
+            lift $ (pod ^. name) `shouldBe` (createdPod ^. name)
             )
 
     it "creates a pod with default service account" $ do
@@ -98,7 +99,7 @@ spec =
           (\_ -> do
             deletePod "default" "test")
           (\(pod, createdPod) -> do
-            lift $ (createdPod ^. Pod.name) `shouldBe` "test"
+            lift $ (createdPod ^. name) `shouldBe` "test"
             lift $ createdPod `shouldSatisfy` hasServiceAccount "default"
             lift $ createdPod `shouldSatisfy` hasSecretVolume "default-token"
             lift $ (createdPod ^.. Pod.container.Container.volumeMounts._Just.each.VolumeMount.mountPath) `shouldBe` ["/var/run/secrets/kubernetes.io/serviceaccount"]
@@ -142,8 +143,8 @@ spec =
 servantErrorWithStatusCode :: Int -> Selector ServantError
 servantErrorWithStatusCode expectedStatusCode (FailureResponse (Status code _) _ _) = expectedStatusCode == code
 
-cloudErrorWithMessage :: Text -> Selector CloudError
-cloudErrorWithMessage expectedMessage (CloudError message) = expectedMessage == message
+cloudErrorWithMessage :: Text -> Selector Base.CloudError
+cloudErrorWithMessage expectedMessage (Base.CloudError message) = expectedMessage == message
 
 hasSecretVolume name pod = let
   volumes = pod ^. Pod.spec._Just.PodSpec.volumes._Just
