@@ -37,9 +37,11 @@ import           Kubernetes.Api.ApivApi                 (createNamespacedPod,
 
 import           Data.HashMap.Strict                    (HashMap)
 import qualified Data.HashMap.Strict                    as HashMap
-import           Data.HashSet
+import           Data.HashSet                           (HashSet)
+import qualified Data.HashSet                           as HashSet
 import           Data.Hourglass
 import           Data.Maybe
+import           Data.Monoid
 import           Data.Text                              (Text)
 
 import           Control.Exception.Safe
@@ -49,20 +51,25 @@ import           Servant.Client
 
 import           CPI.Kubernetes.Resource.Metadata       (name)
 import           CPI.Kubernetes.Resource.Pod
+import           CPI.Kubernetes.Resource.Secret
 
 import           Control.Monad.Stub.Console
 import           Control.Monad.Stub.StubMonad
 import           Control.Monad.Stub.Time
 import           Control.Monad.Stub.Wait
 import           CPI.Kubernetes.Resource.Stub.State     (HasImages (..),
-                                                         HasPods (..))
+                                                         HasPods (..),
+                                                         HasSecrets (..))
 
+import           Control.Monad
 import qualified Control.Monad.State                    as State
 import           Control.Monad.Time
 import           Control.Monad.Wait
 
+import qualified GHC.Int                                as GHC
 
-instance (MonadThrow m, Monoid w, HasPods s, HasImages s, HasWaitCount w, HasTime s, HasTimeline s) => MonadPod (StubT r s w m) where
+
+instance (MonadThrow m, Monoid w, HasPods s, HasSecrets s, HasImages s, HasWaitCount w, HasTime s, HasTimeline s) => MonadPod (StubT r s w m) where
 
   createPod namespace pod = do
     let podName = pod ^. name
@@ -74,10 +81,8 @@ instance (MonadThrow m, Monoid w, HasPods s, HasImages s, HasWaitCount w, HasTim
         }
       }
       else pure ()
-    let pod' = (`status` "Pending") $ defaultServiceAccount pod
-        defaultServiceAccount :: Pod -> Pod
-        defaultServiceAccount pod =
-          let
+    let defaultServiceAccount :: Pod -> Pod
+        defaultServiceAccount pod = let
             volume = Volume.mkVolume "default-token"
                    & Volume.secret .~ Just secretVolume
             secretVolume = mkSecretVolumeSource
@@ -88,22 +93,28 @@ instance (MonadThrow m, Monoid w, HasPods s, HasImages s, HasWaitCount w, HasTim
              & Pod.spec._Just.PodSpec.serviceAccountName .~ Just namespace
              & Pod.spec._Just.PodSpec.volumes.non [] %~ (\volumes -> volume <| volumes)
              & container.Container.volumeMounts.non [] %~ (\mounts -> volumeMount <| mounts)
-        status :: Pod -> Text -> Pod
-        status pod status = pod
-          & Pod.status.non mkPodStatus.PodStatus.phase .~ Just status
+
+    let pod' = defaultServiceAccount pod
+             & status.phase ?~ "Pending"
     let pods' = HashMap.insert (namespace, podName) pod' pods
     State.modify $ updatePods pods'
     timestamp <- currentTime
     images <- State.gets asImages
+    secrets <- State.gets asSecrets
     State.modify $ withTimeline
                  (\events ->
-                   if member (pod' ^. container.image) images
-                     then
-                       HashMap.insert (timestamp + (Elapsed $ Seconds 1))
-                       [withPods $ HashMap.adjust (\pod -> status pod "Running") (namespace, podName)]
-                       events
-                     else
-                       events)
+                   let runningConditions =    All (HashSet.member (pod' ^. container.image) images)
+                                           <> All ((\x -> secretNames ^. contains x) `all` secretVolumeNames)
+                       secretNames = HashSet.fromList $ secrets ^.. each.name
+                       secretVolumeNames = HashSet.fromList $ pod' ^.. Pod.spec._Just.PodSpec.volumes._Just.each.Volume.secret._Just.SecretVolumeSource.secretName._Just
+                     in
+                       if getAll runningConditions
+                         then
+                           HashMap.insert (timestamp + (Elapsed $ Seconds 1))
+                           [withPods $ HashMap.adjust (status.phase ?~ "Running") (namespace, podName)]
+                           events
+                         else
+                           events)
     pure pod'
 
   listPod namespace = do
@@ -120,8 +131,21 @@ instance (MonadThrow m, Monoid w, HasPods s, HasImages s, HasWaitCount w, HasTim
     pure undefined
 
   deletePod namespace name = do
+    timestamp <- currentTime
+    State.modify $ withTimeline
+                 (\events ->
+                   let
+                     terminating :: [s -> s]
+                     terminating = [withPods $ HashMap.adjust (\pod -> pod & status.phase ?~ "Terminating") (namespace, name)]
+                     deleted :: [s -> s]
+                     deleted = [withPods $ HashMap.delete (namespace, name)]
+                     after :: GHC.Int64 -> Elapsed
+                     after n = timestamp + (Elapsed $ Seconds n)
+                     in
+                       HashMap.insert (after 2) deleted (HashMap.insert (after 1) terminating events)
+                       )
+
     pods <- State.gets asPods
-    State.put undefined
     pure undefined
 
   waitForPod namespace name predicate = waitFor (WaitConfig (Retry 20) (Seconds 1)) (getPod namespace name) predicate

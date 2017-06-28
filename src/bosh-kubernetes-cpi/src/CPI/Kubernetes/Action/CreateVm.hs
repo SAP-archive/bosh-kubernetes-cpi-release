@@ -22,7 +22,9 @@ import qualified Kubernetes.Model.V1.Container       as Container
 import           Kubernetes.Model.V1.ObjectMeta      (ObjectMeta, mkObjectMeta)
 import qualified Kubernetes.Model.V1.ObjectMeta      as ObjectMeta
 import           Kubernetes.Model.V1.Pod             (Pod, mkPod)
-import qualified Kubernetes.Model.V1.Pod             as Pod
+import qualified Kubernetes.Model.V1.Pod             as Pod hiding (status)
+import           Kubernetes.Model.V1.Volume             (Volume, mkVolume)
+import qualified Kubernetes.Model.V1.Volume             as Volume
 import           Kubernetes.Model.V1.PodStatus             (PodStatus, mkPodStatus)
 import qualified Kubernetes.Model.V1.PodStatus             as PodStatus
 import           Kubernetes.Model.V1.PodList             (PodList, mkPodList)
@@ -30,6 +32,8 @@ import qualified Kubernetes.Model.V1.PodList             as PodList
 import           Kubernetes.Model.V1.PodSpec         (PodSpec, mkPodSpec)
 import qualified Kubernetes.Model.V1.PodSpec         as PodSpec
 import           Kubernetes.Model.V1.Secret          (Secret, mkSecret)
+import qualified Kubernetes.Model.V1.SecretVolumeSource          as SecretVolumeSource
+import           Kubernetes.Model.V1.SecretVolumeSource          (SecretVolumeSource, mkSecretVolumeSource)
 import qualified Kubernetes.Model.V1.Secret          as Secret
 import           Kubernetes.Model.V1.SecretList          (SecretList, mkSecretList)
 import qualified Kubernetes.Model.V1.SecretList          as SecretList
@@ -89,11 +93,15 @@ createVm agentId stemcell cloudProperties (Base.Networks networkSpec) diskLocali
                       & SecurityContext.privileged .~ Just True
                       & SecurityContext.runAsUser .~ Just 0
     container       = Pod.newContainer "bosh" (Unwrapped stemcell)
+    settingsVolume  = mkVolume "agent-settings"
+                      & Volume.secret .~ (Just $ mkSecretVolumeSource
+                      & SecretVolumeSource.secretName .~ (Just $ secret ^. Metadata.name))
     pod             = Pod.newPod (Unwrapped agentId) container
                       & Metadata.labels .~ labels
                       & Pod.container.Container.securityContext .~ Just securityContext
+                      & Pod.volumes %~ (settingsVolume <|)
     in createPod namespace pod
-  _ <- waitForPod namespace (Unwrapped agentId) (\pod -> pod ^. Pod.status._Just.PodStatus.phase == Just "Running")
+  _ <- waitForPod namespace (Unwrapped agentId) (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
   pure $ podName pod
     where
       podName :: Pod.Pod -> Base.VmId

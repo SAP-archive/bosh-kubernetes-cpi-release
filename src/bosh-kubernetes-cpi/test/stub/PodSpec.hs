@@ -21,6 +21,7 @@ import           Data.Maybe
 import qualified CPI.Base                               as Base
 import           CPI.Kubernetes.Config
 import           CPI.Kubernetes.Resource.Metadata
+import qualified CPI.Kubernetes.Resource.Metadata       as Metadata
 import           CPI.Kubernetes.Resource.Pod            (MonadPod, createPod,
                                                          deletePod, getPod,
                                                          newContainer, newPod,
@@ -36,7 +37,7 @@ import           Kubernetes.Model.V1.ObjectMeta         (ObjectMeta,
                                                          mkObjectMeta)
 import qualified Kubernetes.Model.V1.ObjectMeta         as ObjectMeta
 import           Kubernetes.Model.V1.Pod                (Pod, mkPod)
-import qualified Kubernetes.Model.V1.Pod                as Pod
+import qualified Kubernetes.Model.V1.Pod                as Pod hiding (status)
 import           Kubernetes.Model.V1.PodList            (PodList, mkPodList)
 import qualified Kubernetes.Model.V1.PodList            as PodList
 import           Kubernetes.Model.V1.PodSpec            (PodSpec, mkPodSpec)
@@ -56,6 +57,7 @@ import           Resource
 import           Servant.Common.BaseUrl                 (BaseUrl, parseBaseUrl)
 
 
+import qualified Data.HashMap.Strict                    as HashMap
 import qualified Data.HashSet                           as HashSet
 import           Data.Text                              (Text)
 import qualified Data.Text                              as Text
@@ -63,6 +65,7 @@ import qualified Data.Text                              as Text
 import           Control.Exception.Safe
 import           Control.Monad.FileSystem
 import           Control.Monad.Stub.StubMonad
+import           Control.Monad.Wait
 import           Data.Typeable
 import           GHC.Stack.Types
 import           Network.HTTP.Types.Status
@@ -81,7 +84,8 @@ spec =
             createdPod <- createPod "default" pod
             pure (pod, createdPod))
           (\_ -> do
-            deletePod "default" "test")
+            deletePod "default" "test"
+            waitForPod "default" "test" isNothing)
           (\(pod, createdPod) -> do
             let createdPodName = createdPod ^. Pod.metadata._Just.ObjectMeta.name._Just
             lift $ createdPodName `shouldBe` "test"
@@ -97,7 +101,8 @@ spec =
             createdPod <- createPod "default" pod
             pure (pod, createdPod))
           (\_ -> do
-            deletePod "default" "test")
+            deletePod "default" "test"
+            waitForPod "default" "test" isNothing)
           (\(pod, createdPod) -> do
             lift $ (createdPod ^. name) `shouldBe` "test"
             lift $ createdPod `shouldSatisfy` hasServiceAccount "default"
@@ -113,9 +118,10 @@ spec =
             createdPod <- createPod "default" pod
             pure (pod, createdPod))
           (\_ -> do
-            deletePod "default" "test")
+            deletePod "default" "test"
+            waitForPod "default" "test" isNothing)
           (\(pod, createdPod) -> do
-            lift $ (createdPod ^. Pod.status._Just.PodStatus.phase) `shouldBe` Just "Pending"
+            lift $ (createdPod ^. Pod.status.Pod.phase._Just) `shouldBe` "Pending"
             )
 
     it "creates a pod that will end up in state 'Running'" $ do
@@ -123,28 +129,79 @@ spec =
         bracket
           (do
             _ <- createPod "default" pod
-            runningPod <- waitForPod "default" "test" (\pod -> pod ^. Pod.status._Just.PodStatus.phase == Just "Running")
-            pure (pod, runningPod))
+            pure pod)
           (\_ -> do
-            deletePod "default" "test")
-          (\(pod, runningPod) -> do
-            lift $ (runningPod ^. Pod.status._Just.PodStatus.phase) `shouldBe` Just "Running"
+            deletePod "default" "test"
+            waitForPod "default" "test" isNothing)
+          (\pod -> do
+            runningPod <- waitForPod "default" "test" (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
+            lift $ (runningPod ^. _Just.Pod.status.Pod.phase._Just) `shouldBe` "Running"
             )
+
+    context "when Pod has a secret volume attached" $ do
+      let pod' = pod & Pod.volumes %~ (settingsVolume <|)
+          settingsVolume =  mkVolume "secret-volume"
+                            & Volume.secret .~ (Just $ mkSecretVolumeSource
+                            & SecretVolumeSource.secretName .~ (Just $ secret ^. Metadata.name))
+          secret = newSecret "test-secret"
+      it "creates a pod that will end up in state 'Running'" $ do
+        void $ run $ do
+          bracket
+            (do
+              _ <- createSecret "default" secret
+              _ <- createPod "default" pod'
+              pure pod)
+            (\_ -> do
+              deletePod "default" "test"
+              waitForPod "default" "test" isNothing
+              deleteSecret "default" "test-secret"
+              waitForSecret "default" "test-secret" isNothing
+              )
+            (\pod -> do
+              runningPod <- waitForPod "default" "test" (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
+              lift $ (runningPod ^. _Just.Pod.status.Pod.phase._Just) `shouldBe` "Running"
+              )
 
     context "when a pod with the given name already exists" $
       it "throws ServantError reason 409 CONFLICT" $ do
         void $ run $
           bracket
             (createPod "default" pod)
-            (\_ -> deletePod "default" "test")
+            (\_ -> do
+                     deletePod "default" "test"
+                     waitForPod "default" "test" isNothing)
             (\_ -> createPod "default" pod)
         `shouldThrow` (servantErrorWithStatusCode 409)
+
+    context "when attached secret does not exist" $ do
+      it "should not reach state 'Running'" $ do
+        let pod' = pod & Pod.volumes %~ (settingsVolume <|)
+            settingsVolume =  mkVolume "secret-volume"
+                              & Volume.secret .~ (Just $ mkSecretVolumeSource
+                              & SecretVolumeSource.secretName .~ (Just "does-not-exist"))
+        void $ run $ do
+          bracket
+            (do
+              _ <- createPod "default" pod'
+              pure pod)
+            (\_ -> do
+              deletePod "default" "test"
+              waitForPod "default" "test" isNothing
+              )
+            (\pod -> do
+              runningPod <- waitForPod "default" "test" (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
+              lift $ (runningPod ^. _Just.Pod.status.Pod.phase._Just) `shouldBe` "Pending"
+              )
+        `shouldThrow` timeout
 
 servantErrorWithStatusCode :: Int -> Selector ServantError
 servantErrorWithStatusCode expectedStatusCode (FailureResponse (Status code _) _ _) = expectedStatusCode == code
 
 cloudErrorWithMessage :: Text -> Selector Base.CloudError
 cloudErrorWithMessage expectedMessage (Base.CloudError message) = expectedMessage == message
+
+timeout :: Selector Timeout
+timeout Timeout = True
 
 hasSecretVolume name pod = let
   volumes = pod ^. Pod.spec._Just.PodSpec.volumes._Just
@@ -168,7 +225,8 @@ run f = do
           (result, _, _::NoOutput) <- runStubT
                                         emptyStubConfig
                                         emptyKube {
-                                          images = HashSet.singleton "busybox"
+                                            images = HashSet.singleton "busybox"
+                                          , secrets = HashMap.singleton ("default", "default-token") (newSecret "default-token")
                                         } f
           pure result
 

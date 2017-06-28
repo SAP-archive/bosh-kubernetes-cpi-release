@@ -8,27 +8,32 @@ module CPI.Kubernetes.Action.CreateVmSpec(spec) where
 import           Test.Hspec
 
 import           Control.Lens
-import qualified CPI.Kubernetes.Base64               as Base64
+import qualified CPI.Kubernetes.Base64                  as Base64
 import           Data.Aeson
 import           Data.Aeson.Lens
-import           Data.ByteString.Lazy                (fromStrict, toStrict)
-import           Data.HashMap.Strict                 (HashMap)
-import qualified Data.HashMap.Strict                 as HashMap
-import           Data.HashSet                        (HashSet)
-import qualified Data.HashSet                        as HashSet
-import           Data.Text                           (Text)
+import           Data.ByteString.Lazy                   (fromStrict, toStrict)
+import           Data.HashMap.Strict                    (HashMap)
+import qualified Data.HashMap.Strict                    as HashMap
+import           Data.HashSet                           (HashSet)
+import qualified Data.HashSet                           as HashSet
+import           Data.Text                              (Text)
 import           Data.Text.Encoding
 
-import           Kubernetes.Model.V1.Container       (Container)
-import qualified Kubernetes.Model.V1.Container       as Container
-import           Kubernetes.Model.V1.Pod             (Pod)
-import qualified Kubernetes.Model.V1.Pod             as Pod
-import           Kubernetes.Model.V1.PodSpec         (PodSpec)
-import qualified Kubernetes.Model.V1.PodSpec         as PodSpec
-import           Kubernetes.Model.V1.PodStatus       (PodStatus)
-import qualified Kubernetes.Model.V1.PodStatus       as PodStatus
-import           Kubernetes.Model.V1.SecurityContext (SecurityContext)
-import qualified Kubernetes.Model.V1.SecurityContext as SecurityContext
+import           Kubernetes.Model.V1.Container          (Container)
+import qualified Kubernetes.Model.V1.Container          as Container
+import           Kubernetes.Model.V1.Pod                (Pod)
+import qualified Kubernetes.Model.V1.Pod                as Pod hiding (status)
+import           Kubernetes.Model.V1.PodSpec            (PodSpec)
+import qualified Kubernetes.Model.V1.PodSpec            as PodSpec
+import           Kubernetes.Model.V1.PodStatus          (PodStatus)
+import qualified Kubernetes.Model.V1.PodStatus          as PodStatus
+import           Kubernetes.Model.V1.SecretVolumeSource (SecretVolumeSource,
+                                                         mkSecretVolumeSource)
+import qualified Kubernetes.Model.V1.SecretVolumeSource as SecretVolumeSource
+import           Kubernetes.Model.V1.SecurityContext    (SecurityContext)
+import qualified Kubernetes.Model.V1.SecurityContext    as SecurityContext
+import           Kubernetes.Model.V1.Volume             (Volume)
+import qualified Kubernetes.Model.V1.Volume             as Volume
 
 import           Control.Exception.Safe
 import           Control.Monad.Reader
@@ -36,7 +41,7 @@ import           Control.Monad.Reader
 import           Data.Maybe
 import           Data.Semigroup
 
-import qualified CPI.Base                            as Base
+import qualified CPI.Base                               as Base
 
 import           Control.Monad.Stub.Console
 import           Control.Monad.Stub.FileSystem
@@ -47,8 +52,9 @@ import           CPI.Kubernetes.Action.CreateVm
 import           CPI.Kubernetes.Config
 import           CPI.Kubernetes.Resource.Metadata
 import           CPI.Kubernetes.Resource.Pod
-import           CPI.Kubernetes.Resource.Secret      (getSecret)
-import qualified CPI.Kubernetes.Resource.Secret      as Secret
+import qualified CPI.Kubernetes.Resource.Pod            as Pod
+import           CPI.Kubernetes.Resource.Secret         (getSecret)
+import qualified CPI.Kubernetes.Resource.Secret         as Secret
 import           CPI.Kubernetes.Resource.Stub.Pod
 import           CPI.Kubernetes.Resource.Stub.Secret
 import           CPI.Kubernetes.Resource.Stub.State
@@ -80,11 +86,15 @@ spec = describe "createVm" $ do
                  }
                  , stubConfig = emptyStubConfig
                }
+      emptyKube' = emptyKube {
+        secrets = HashMap.singleton ("default", "default-token") (Secret.newSecret "default-token")
+      }
   let ?agent = HashMap.empty :: HashMap Text Value
+
   it "should create a Pod" $ do
     void $ runStubT'
              access
-             emptyKube {
+             emptyKube' {
                images = HashSet.singleton "some-image"
              } $ do
       (Base.VmId vmId) <- createVm
@@ -100,10 +110,10 @@ spec = describe "createVm" $ do
       lift $ maybePod `shouldSatisfy` isJust
 
   describe "should create a Pod" $ do
-    it "should create a Pod named after the agent id" $ do
+    it "named after the agent id" $ do
       void $ runStubT'
                access
-               emptyKube {
+               emptyKube' {
                  images = HashSet.singleton "some-image"
                } $ do
         (Base.VmId vmId) <- createVm
@@ -120,10 +130,10 @@ spec = describe "createVm" $ do
         let Just pod = maybePod
         lift $ (pod ^. name) `shouldBe` "test-agent"
 
-    it "should create a Pod labeled with agent id" $ do
+    it "labeled with agent id" $ do
       void $ runStubT'
                access
-               emptyKube {
+               emptyKube' {
                  images = HashSet.singleton "some-image"
                } $ do
         (Base.VmId vmId) <- createVm
@@ -138,10 +148,10 @@ spec = describe "createVm" $ do
         maybePod <- getPod "bosh" vmId
         lift $ (maybePod ^.. _Just.labels.at "bosh.cloudfoundry.org/agent-id"._Just._String) `shouldBe` ["test-agent"]
 
-    it "should create a Pod using the stemcell id as image id" $ do
+    it "using the stemcell id as image id" $ do
       void $ runStubT'
                access
-               emptyKube {
+               emptyKube' {
                  images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
                } $ do
                (Base.VmId vmId) <- createVm
@@ -157,10 +167,34 @@ spec = describe "createVm" $ do
                let Just pod = maybePod
                    imageId = pod ^. (Pod.spec._Just.PodSpec.containers.ix 0.Container.image._Just)
                lift $ imageId `shouldBe` "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
-    it "should create a Pod with priviledged container" $ do
+
+    it "with the agent settings attached as secret volume" $ do
+      void $ runStubT'
+               access
+               emptyKube' {
+                 images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
+               } $ do
+               (Base.VmId vmId) <- createVm
+                         (Base.AgentId "test-agent")
+                         (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
+                         (Base.VmProperties $ Object HashMap.empty)
+                         (Base.Networks $ Object HashMap.empty)
+                         [Base.VolumeId ""]
+                         (Base.Environment HashMap.empty)
+
+               maybePod <- getPod "bosh" vmId
+               lift $ maybePod `shouldSatisfy` isJust
+               let Just pod = maybePod
+                   volumeNames = pod ^.. (Pod.volumes.each.Volume.name)
+                   secretVolumes = pod ^.. (Pod.volumes.each.Volume.secret._Just)
+               lift $ volumeNames `shouldContain` ["agent-settings"]
+               lift $ secretVolumes `shouldContain` [mkSecretVolumeSource & SecretVolumeSource.secretName .~ Just "agent-settings-test-agent"]
+
+
+    it "with priviledged container" $ do
      void $ runStubT'
               access
-              emptyKube {
+              emptyKube' {
                 images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
               } $ do
               (Base.VmId vmId) <- createVm
@@ -179,10 +213,10 @@ spec = describe "createVm" $ do
               let userId = pod ^.. container.Container.securityContext._Just.SecurityContext.runAsUser._Just
               lift $ userId `shouldBe` [0]
 
-    it "should wait for the Pod to be running" $ do
+    it "and wait for the Pod to be running" $ do
      (_, s, _) <- runStubT'
                     access
-                    emptyKube {
+                    emptyKube' {
                       images = HashSet.singleton "test-stemcell"
                     } $ do
                     (Base.VmId vmId) <- createVm
@@ -197,14 +231,14 @@ spec = describe "createVm" $ do
                     maybePod <- getPod "bosh" vmId
                     lift $ maybePod `shouldSatisfy` isJust
                     let Just pod = maybePod
-                    lift $ (pod ^. Pod.status._Just.PodStatus.phase) `shouldBe` Just "Running"
+                    lift $ (pod ^. Pod.status.Pod.phase._Just) `shouldBe` "Running"
      (HashMap.size $ events s) `shouldBe` 1
      pure ()
 
   it "should create a Secret" $ do
     void $ runStubT'
              access
-             emptyKube {
+             emptyKube' {
                images = HashSet.singleton "some-image"
              } $ do
              (Base.VmId vmId) <- createVm
@@ -222,7 +256,7 @@ spec = describe "createVm" $ do
     it "with name 'agent-settings-<agent id>'" $ do
       void $ runStubT'
                access
-               emptyKube {
+               emptyKube' {
                  images = HashSet.singleton "some-image"
                } $ do
                (Base.VmId vmId) <- createVm
@@ -239,7 +273,7 @@ spec = describe "createVm" $ do
     it "labeled with agent id" $ do
       void $ runStubT'
                access
-               emptyKube {
+               emptyKube' {
                  images = HashSet.singleton "some-image"
                } $ do
                (Base.VmId vmId) <- createVm
@@ -266,7 +300,7 @@ spec = describe "createVm" $ do
 
       void $ runStubT'
                access
-               emptyKube {
+               emptyKube' {
                  images = HashSet.singleton "some-image"
                } $ do
                (Base.VmId vmId) <- createVm

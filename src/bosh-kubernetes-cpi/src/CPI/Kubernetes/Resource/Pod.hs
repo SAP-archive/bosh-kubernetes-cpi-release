@@ -10,7 +10,10 @@ module CPI.Kubernetes.Resource.Pod(
   , newPod
   , newContainer
   , container
+  , volumes
   , image
+  , status
+  , phase
 ) where
 
 import qualified CPI.Base                          as Base
@@ -31,6 +34,10 @@ import           Kubernetes.Model.V1.PodList       (PodList)
 import qualified Kubernetes.Model.V1.PodList       as PodList
 import           Kubernetes.Model.V1.PodSpec       (PodSpec, mkPodSpec)
 import qualified Kubernetes.Model.V1.PodSpec       as PodSpec
+import           Kubernetes.Model.V1.PodStatus     (PodStatus, mkPodStatus)
+import qualified Kubernetes.Model.V1.PodStatus     as PodStatus
+import           Kubernetes.Model.V1.Volume        (Volume, mkVolume)
+import qualified Kubernetes.Model.V1.Volume        as Volume
 
 import           Kubernetes.Api.ApivApi            (createNamespacedPod,
                                                     deleteNamespacedPod,
@@ -65,7 +72,7 @@ class (Monad m) => MonadPod m where
   getPod :: Text -> Text -> m (Maybe Pod)
   updatePod :: Text -> Pod -> m Pod
   deletePod :: Text -> Text -> m Pod
-  waitForPod :: Text -> Text -> (Pod -> Bool) -> m Pod
+  waitForPod :: Text -> Text -> (Maybe Pod -> Bool) -> m (Maybe Pod)
 
 instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem m, MonadWait m, HasConfig c) => MonadPod (Resource c m) where
 
@@ -102,7 +109,7 @@ newPod name container =
 
 newContainer :: Text -> Text -> Container
 newContainer name imageId =
-  mkContainer name & Container.image .~ Just imageId
+  mkContainer name & Container.image ?~ imageId
 
 spec :: Traversal' Pod PodSpec
 spec = Pod.spec._Just
@@ -110,5 +117,14 @@ spec = Pod.spec._Just
 container :: Traversal' Pod Container
 container = spec.PodSpec.containers.ix 0
 
+volumes :: Traversal' Pod [Volume]
+volumes = spec.PodSpec.volumes.non []
+
 image :: Traversal' Container Text
 image = Container.image._Just
+
+status :: Traversal' Pod PodStatus
+status = Pod.status.non mkPodStatus
+
+phase :: Traversal' PodStatus (Maybe Text)
+phase = PodStatus.phase

@@ -44,9 +44,11 @@ import           Control.Monad.FileSystem
 import           Control.Monad.Log
 import           Servant.Client
 
+import           Control.Monad.Wait
 import           Data.Aeson
 import           Data.ByteString.Lazy                (toStrict)
 import qualified Data.HashMap.Strict                 as HashMap
+import           Data.Hourglass.Types
 import           Data.Semigroup
 import           Data.Text                           (Text)
 import qualified Data.Text                           as Text
@@ -58,9 +60,9 @@ class (Monad m) => MonadSecret m where
   getSecret :: Text -> Text -> m (Maybe Secret)
   updateSecret :: Text -> Secret -> m Secret
   deleteSecret :: Text -> Text -> m Status
-  waitForSecret :: Text -> Text -> (Secret -> Bool) -> m Secret
+  waitForSecret :: Text -> Text -> (Maybe Secret -> Bool) -> m (Maybe Secret)
 
-instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem m, HasConfig c) => MonadSecret (Resource c m) where
+instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem m, MonadWait m, HasConfig c) => MonadSecret (Resource c m) where
 
   createSecret namespace secret = do
     logDebug $ "Creating secret '" <> (decodeUtf8.toStrict.encode) secret <> "'"
@@ -82,12 +84,7 @@ instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem
     logDebug $ "Delete secret '" <> namespace <> "/" <> name <> "'"
     restCall $ deleteNamespacedSecret namespace name Nothing (mkDeleteOptions 0)
 
-  waitForSecret namespace name f = do
-    logDebug $ "Waiting for secret '" <> namespace <> "/" <> name <> "'"
-    mSecret <- getSecret namespace name
-    case mSecret of
-      Just secret -> pure $ if f secret then secret else secret
-      Nothing     -> throwM $ CloudError ""
+  waitForSecret namespace name predicate = waitFor (WaitConfig (Retry 20) (Seconds 1)) (getSecret namespace name) predicate
 
 newSecret :: Text -> Secret
 newSecret name =

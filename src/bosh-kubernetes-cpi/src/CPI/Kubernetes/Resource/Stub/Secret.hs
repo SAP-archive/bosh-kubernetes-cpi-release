@@ -49,9 +49,16 @@ import           Data.Text.Encoding                  (decodeUtf8)
 
 
 import           Control.Monad.Stub.StubMonad
+import           Control.Monad.Stub.Time
+import           Control.Monad.Stub.Wait
+import           Control.Monad.Time
+import           Control.Monad.Wait
 import           Data.HashMap.Strict                 (HashMap, insert)
+import           Data.Hourglass.Types
 
-instance (MonadThrow m, Monoid w, HasSecrets s) => MonadSecret (StubT r s w m) where
+import qualified GHC.Int                             as GHC
+
+instance (MonadThrow m, MonadWait m, Monoid w, HasSecrets s, HasWaitCount w, HasTime s, HasTimeline s) => MonadSecret (StubT r s w m) where
   createSecret namespace secret = do
     secrets <- State.gets asSecrets
     let secrets' = insert (namespace, secret ^. name) secret secrets
@@ -72,10 +79,17 @@ instance (MonadThrow m, Monoid w, HasSecrets s) => MonadSecret (StubT r s w m) w
     pure undefined
 
   deleteSecret namespace name = do
-    State.modify
-      $ withSecrets
-      $ id
+    timestamp <- currentTime
+    State.modify $ withTimeline
+                 (\events ->
+                   let
+                     deleted :: [s -> s]
+                     deleted = [withSecrets $ HashMap.delete (namespace, name)]
+                     after :: GHC.Int64 -> Elapsed
+                     after n = timestamp + (Elapsed $ Seconds n)
+                     in
+                       HashMap.insert (after 1) deleted events
+                       )
     pure undefined
 
-  waitForSecret namespace name f = do
-    throwM $ CloudError "Timeout waiting for pod"
+  waitForSecret namespace name predicate = waitFor (WaitConfig (Retry 20) (Seconds 1)) (getSecret namespace name) predicate
