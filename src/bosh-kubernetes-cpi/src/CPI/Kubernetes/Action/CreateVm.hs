@@ -41,7 +41,7 @@ import qualified Data.HashMap.Strict                 as HashMap
 import           Data.Text                           (Text)
 import qualified Data.Text                           as Text
 import Data.Text.Encoding
-import qualified Data.ByteString.Base64 as Base64
+import qualified CPI.Kubernetes.Base64 as Base64
 import Data.ByteString.Lazy (toStrict)
 
 import           Control.Monad.Log
@@ -78,7 +78,7 @@ createVm agentId stemcell cloudProperties (Base.Networks networkSpec) diskLocali
   secret <- let
     secret = newSecret ("agent-settings-" <> Unwrapped agentId)
              & Metadata.labels .~ labels
-             & data' .~ HashMap.singleton "settings.json" (Aeson.String (decodeUtf8 $ Base64.encode $ toStrict $ Aeson.encode settings))
+             & data' .~ HashMap.singleton "settings.json" (toJSON $ Base64.encodeJSON settings)
     settings = Base.initialAgentSettings agentId blobstore env ntp mbus
     blobstore = agent config ^? at "blobstore"._Just._JSON
     ntp = agent config ^. at "ntp"._Just._JSON

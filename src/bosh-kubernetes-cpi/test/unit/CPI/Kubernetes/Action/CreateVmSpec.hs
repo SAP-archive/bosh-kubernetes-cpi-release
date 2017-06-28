@@ -8,8 +8,9 @@ module CPI.Kubernetes.Action.CreateVmSpec(spec) where
 import           Test.Hspec
 
 import           Control.Lens
+import qualified CPI.Kubernetes.Base64               as Base64
 import           Data.Aeson
-import qualified Data.ByteString.Base64              as Base64
+import           Data.Aeson.Lens
 import           Data.ByteString.Lazy                (fromStrict, toStrict)
 import           Data.HashMap.Strict                 (HashMap)
 import qualified Data.HashMap.Strict                 as HashMap
@@ -52,10 +53,6 @@ import           CPI.Kubernetes.Resource.Stub.Pod
 import           CPI.Kubernetes.Resource.Stub.Secret
 import           CPI.Kubernetes.Resource.Stub.State
 import           Resource
-
-
-import           Data.Aeson.Lens
-import           Data.Aeson.QQ
 
 instance HasStdin TestConfig where
   asStdin = const ""
@@ -282,7 +279,7 @@ spec = describe "createVm" $ do
 
                maybeSecret <- getSecret "bosh" "agent-settings-test-agent"
                let [encoded] = maybeSecret ^.. _Just.Secret.data'.at "settings.json"._Just._String
-                   Right decoded = eitherDecode $ fromStrict $ Base64.decodeLenient $ encodeUtf8 encoded
+               decoded <- Base64.decodeJSON encoded
                lift $ decoded `shouldBe` initialSettings
 
 

@@ -18,6 +18,7 @@ library
   default-extensions:  OverloadedStrings
   hs-source-dirs:      src
   exposed-modules:     CPI.Kubernetes
+                     , CPI.Kubernetes.Base64
                      , CPI.Kubernetes.Http
                      , CPI.Kubernetes.Config
                      , CPI.Kubernetes.Model
@@ -77,11 +78,14 @@ test-suite unit
                      , ScopedTypeVariables
   hs-source-dirs:      test/unit
   main-is:             Spec.hs
-  other-modules:       CPI.Kubernetes.VmTypesSpec
+  other-modules:       CPI.Kubernetes.Base64Spec
+                     , CPI.Kubernetes.VmTypesSpec
                      , CPI.Kubernetes.ConfigSpec
                      , CPI.Kubernetes.Action.CreateVmSpec
   build-depends:       base
                      , hspec
+                     , QuickCheck
+                     , quickcheck-instances
                      , aeson-qq
                      , lens-aeson
                      , raw-strings-qq
