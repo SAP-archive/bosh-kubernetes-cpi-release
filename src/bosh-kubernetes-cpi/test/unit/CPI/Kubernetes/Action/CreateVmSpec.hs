@@ -150,26 +150,6 @@ spec = describe "createVm" $ do
         maybePod <- getPod "bosh" vmId
         lift $ (maybePod ^.. _Just.labels.at "bosh.cloudfoundry.org/agent-id"._Just._String) `shouldBe` ["test-agent"]
 
-    it "using the stemcell id as image id" $ do
-      void $ runStubT'
-               access
-               emptyKube' {
-                 images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
-               } $ do
-               (Base.VmId vmId) <- createVm
-                         (Base.AgentId "test-agent")
-                         (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
-                         (Base.VmProperties $ Object HashMap.empty)
-                         (Base.Networks HashMap.empty)
-                         [Base.VolumeId ""]
-                         (Base.Environment HashMap.empty)
-
-               maybePod <- getPod "bosh" vmId
-               lift $ maybePod `shouldSatisfy` isJust
-               let Just pod = maybePod
-                   imageId = pod ^. (Pod.spec._Just.PodSpec.containers.ix 0.Container.image._Just)
-               lift $ imageId `shouldBe` "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
-
     it "with the agent settings attached as secret volume" $ do
       void $ runStubT'
                access
@@ -212,69 +192,156 @@ spec = describe "createVm" $ do
                    volumeNames = pod ^.. (Pod.volumes.each.Volume.name)
                lift $ volumeNames `shouldContain` ["ephemeral-disk"]
 
-    it "with ephermeral disk mounted as empty dir volume" $ do
-      void $ runStubT'
-               access
-               emptyKube' {
-                 images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
-               } $ do
-               (Base.VmId vmId) <- createVm
-                         (Base.AgentId "test-agent")
-                         (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
-                         (Base.VmProperties $ Object HashMap.empty)
-                         (Base.Networks HashMap.empty)
-                         [Base.VolumeId ""]
-                         (Base.Environment HashMap.empty)
+    describe "with a container" $ do
 
-               lift $ vmId `shouldBe` "test-agent"
-               maybePod <- getPod "bosh" vmId
-               let hasMount :: VolumeMount -> Bool
-                   hasMount mount = mount ^. VolumeMount.name == "ephemeral-disk"
-               lift $ (maybePod ^.. _Just.container.Container.volumeMounts._Just.each.VolumeMount.name) `shouldContain` ["ephemeral-disk"]
-               lift $ (maybePod ^.. _Just.container.Container.volumeMounts._Just.each.filtered hasMount.VolumeMount.mountPath) `shouldContain` ["/var/vcap/data"]
+      it "using the stemcell id as image id" $ do
+        void $ runStubT'
+                 access
+                 emptyKube' {
+                   images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
+                 } $ do
+                 (Base.VmId vmId) <- createVm
+                           (Base.AgentId "test-agent")
+                           (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
+                           (Base.VmProperties $ Object HashMap.empty)
+                           (Base.Networks HashMap.empty)
+                           [Base.VolumeId ""]
+                           (Base.Environment HashMap.empty)
 
-    it "with agent settings mounted as secret volume" $ do
-     void $ runStubT'
-              access
-              emptyKube' {
-                images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
-              } $ do
-              (Base.VmId vmId) <- createVm
-                        (Base.AgentId "test-agent")
-                        (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
-                        (Base.VmProperties $ Object HashMap.empty)
-                        (Base.Networks HashMap.empty)
-                        [Base.VolumeId ""]
-                        (Base.Environment HashMap.empty)
+                 maybePod <- getPod "bosh" vmId
+                 lift $ maybePod `shouldSatisfy` isJust
+                 let Just pod = maybePod
+                     imageId = pod ^. (Pod.spec._Just.PodSpec.containers.ix 0.Container.image._Just)
+                 lift $ imageId `shouldBe` "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
 
-              lift $ vmId `shouldBe` "test-agent"
-              maybePod <- getPod "bosh" vmId
-              let hasMount :: VolumeMount -> Bool
-                  hasMount mount = mount ^. VolumeMount.name == "agent-settings"
-              lift $ (maybePod ^.. _Just.container.Container.volumeMounts._Just.each.VolumeMount.name) `shouldContain` ["agent-settings"]
-              lift $ (maybePod ^.. _Just.container.Container.volumeMounts._Just.each.filtered hasMount.VolumeMount.mountPath) `shouldContain` ["/var/vcap/bosh/settings"]
+      it "with ephermeral disk mounted as empty dir volume" $ do
+        void $ runStubT'
+                 access
+                 emptyKube' {
+                   images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
+                 } $ do
+                 (Base.VmId vmId) <- createVm
+                           (Base.AgentId "test-agent")
+                           (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
+                           (Base.VmProperties $ Object HashMap.empty)
+                           (Base.Networks HashMap.empty)
+                           [Base.VolumeId ""]
+                           (Base.Environment HashMap.empty)
 
-    it "with priviledged container" $ do
-     void $ runStubT'
-              access
-              emptyKube' {
-                images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
-              } $ do
-              (Base.VmId vmId) <- createVm
-                        (Base.AgentId "test-agent")
-                        (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
-                        (Base.VmProperties $ Object HashMap.empty)
-                        (Base.Networks HashMap.empty)
-                        [Base.VolumeId ""]
-                        (Base.Environment HashMap.empty)
+                 lift $ vmId `shouldBe` "test-agent"
+                 maybePod <- getPod "bosh" vmId
+                 let hasMount :: VolumeMount -> Bool
+                     hasMount mount = mount ^. VolumeMount.name == "ephemeral-disk"
+                 lift $ (maybePod ^.. _Just.container.Container.volumeMounts._Just.each.VolumeMount.name) `shouldContain` ["ephemeral-disk"]
+                 lift $ (maybePod ^.. _Just.container.Container.volumeMounts._Just.each.filtered hasMount.VolumeMount.mountPath) `shouldContain` ["/var/vcap/data"]
 
-              maybePod <- getPod "bosh" vmId
-              lift $ maybePod `shouldSatisfy` isJust
-              let Just pod = maybePod
-                  priviledged = pod ^.. container.Container.securityContext._Just.SecurityContext.privileged._Just
-              lift $ priviledged `shouldBe` [True]
-              let userId = pod ^.. container.Container.securityContext._Just.SecurityContext.runAsUser._Just
-              lift $ userId `shouldBe` [0]
+      it "with agent settings mounted as secret volume" $ do
+        void $ runStubT'
+                access
+                emptyKube' {
+                  images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
+                } $ do
+                (Base.VmId vmId) <- createVm
+                          (Base.AgentId "test-agent")
+                          (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
+                          (Base.VmProperties $ Object HashMap.empty)
+                          (Base.Networks HashMap.empty)
+                          [Base.VolumeId ""]
+                          (Base.Environment HashMap.empty)
+
+                lift $ vmId `shouldBe` "test-agent"
+                maybePod <- getPod "bosh" vmId
+                let hasMount :: VolumeMount -> Bool
+                    hasMount mount = mount ^. VolumeMount.name == "agent-settings"
+                lift $ (maybePod ^.. _Just.container.Container.volumeMounts._Just.each.VolumeMount.name) `shouldContain` ["agent-settings"]
+                lift $ (maybePod ^.. _Just.container.Container.volumeMounts._Just.each.filtered hasMount.VolumeMount.mountPath) `shouldContain` ["/var/vcap/bosh/settings"]
+
+      it "in priviledged mode" $ do
+        void $ runStubT'
+                access
+                emptyKube' {
+                  images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
+                } $ do
+                (Base.VmId vmId) <- createVm
+                          (Base.AgentId "test-agent")
+                          (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
+                          (Base.VmProperties $ Object HashMap.empty)
+                          (Base.Networks HashMap.empty)
+                          [Base.VolumeId ""]
+                          (Base.Environment HashMap.empty)
+
+                maybePod <- getPod "bosh" vmId
+                lift $ maybePod `shouldSatisfy` isJust
+                let Just pod = maybePod
+                    priviledged = pod ^.. container.Container.securityContext._Just.SecurityContext.privileged._Just
+                lift $ priviledged `shouldBe` [True]
+                let userId = pod ^.. container.Container.securityContext._Just.SecurityContext.runAsUser._Just
+                lift $ userId `shouldBe` [0]
+
+      it "that launches the agent" $ do
+        void $ runStubT'
+                access
+                emptyKube' {
+                  images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
+                } $ do
+                (Base.VmId vmId) <- createVm
+                          (Base.AgentId "test-agent")
+                          (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
+                          (Base.VmProperties $ Object HashMap.empty)
+                          (Base.Networks HashMap.empty)
+                          [Base.VolumeId ""]
+                          (Base.Environment HashMap.empty)
+
+                lift $ vmId `shouldBe` "test-agent"
+                maybePod <- getPod "bosh" vmId
+                lift $ (maybePod ^. _Just.container.Container.command) `shouldBe` Just [
+                             "/bin/bash", "-c",
+                             "cp /etc/resolv.conf /etc/resolv.conf.dup; "
+                          <> "umount /etc/resolv.conf; "
+                          <> "mv /etc/resolv.conf.dup /etc/resolv.conf; "
+                          <> "cp /etc/hosts /etc/hosts.dup; "
+                          <> "umount /etc/hosts; "
+                          <> "mv /etc/hosts.dup /etc/hosts; "
+                          <> "cp /etc/hostname /etc/hostname.dup; "
+                          <> "umount /etc/hostname; "
+                          <> "mv /etc/hostname.dup /etc/hostname; "
+                          <> "exec env -i /usr/sbin/runsvdir-start"]
+
+      it "with tty" $ do
+        void $ runStubT'
+                access
+                emptyKube' {
+                  images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
+                } $ do
+                (Base.VmId vmId) <- createVm
+                          (Base.AgentId "test-agent")
+                          (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
+                          (Base.VmProperties $ Object HashMap.empty)
+                          (Base.Networks HashMap.empty)
+                          [Base.VolumeId ""]
+                          (Base.Environment HashMap.empty)
+
+                lift $ vmId `shouldBe` "test-agent"
+                maybePod <- getPod "bosh" vmId
+                lift $ (maybePod ^? _Just.container.Container.tty._Just) `shouldBe` Just True
+
+      it "with stdin" $ do
+        void $ runStubT'
+                access
+                emptyKube' {
+                  images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
+                } $ do
+                (Base.VmId vmId) <- createVm
+                          (Base.AgentId "test-agent")
+                          (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
+                          (Base.VmProperties $ Object HashMap.empty)
+                          (Base.Networks HashMap.empty)
+                          [Base.VolumeId ""]
+                          (Base.Environment HashMap.empty)
+
+                lift $ vmId `shouldBe` "test-agent"
+                maybePod <- getPod "bosh" vmId
+                lift $ (maybePod ^? _Just.container.Container.stdin._Just) `shouldBe` Just True
 
     it "and wait for the Pod to be running" $ do
      (_, s, _) <- runStubT'
@@ -378,31 +445,3 @@ spec = describe "createVm" $ do
                let [encoded] = maybeSecret ^.. _Just.Secret.data'.at "settings.json"._Just._String
                decoded <- Base64.decodeJSON encoded
                lift $ decoded `shouldBe` initialSettings
-
-
-
-  -- it "should create a Pod with 'run_agent.sh' mouted at '/var/vcap/bosh'" $ do
-  --   (_, s, _) <- runStubT'
-  --                  access
-  --                  emptyKube' {
-  --                    images = HashSet.singleton "test-stemcell"
-  --                  } $ do
-  --                  (Base.VmId vmId) <- createVm
-  --                            (Base.AgentId "test-agent")
-  --                            (Base.StemcellId "test-stemcell")
-  --                            (Base.VmProperties $ Object HashMap.empty)
-  --                            (Base.Networks HashMap.empty)
-  --                            [Base.VolumeId ""]
-  --                            (Base.Environment HashMap.empty)
-  --
-  --                  lift $ vmId `shouldBe` "test-agent"
-  --                  maybePod <- getPod "bosh" vmId
-  --                  lift $ maybePod `shouldSatisfy` isJust
-  --                  let Just pod = maybePod
-                  --  lift $ (secret ^. Secret.data_) & decode base64
-                   -- secret with agent start script exists
-                   -- volume points to secret
-                   -- volumeMount points to volume
-                  --  lift $ (pod ^.. Pod.volumes) `shouldContain` Just
-    -- (HashMap.size $ events s) `shouldBe` 1
-    -- pure ()

@@ -99,6 +99,20 @@ createVm agentId stemcell cloudProperties networks diskLocality env = do
     container       = Pod.newContainer "bosh" (Unwrapped stemcell)
                       & Container.volumeMounts.non [] %~ (settingsVolumeMount <|)
                       & Container.volumeMounts.non [] %~ (ephemeralVolumeMount <|)
+                      & Container.command .~ Just [
+                             "/bin/bash", "-c",
+                             "cp /etc/resolv.conf /etc/resolv.conf.dup; "
+                          <> "umount /etc/resolv.conf; "
+                          <> "mv /etc/resolv.conf.dup /etc/resolv.conf; "
+                          <> "cp /etc/hosts /etc/hosts.dup; "
+                          <> "umount /etc/hosts; "
+                          <> "mv /etc/hosts.dup /etc/hosts; "
+                          <> "cp /etc/hostname /etc/hostname.dup; "
+                          <> "umount /etc/hostname; "
+                          <> "mv /etc/hostname.dup /etc/hostname; "
+                          <> "exec env -i /usr/sbin/runsvdir-start"]
+                      & Container.tty .~ Just True
+                      & Container.stdin .~ Just True
     ephemeralVolume = mkVolume "ephemeral-disk"
                       & Volume.emptyDir ?~ mkEmptyDirVolumeSource
     ephemeralVolumeMount = mkVolumeMount "ephemeral-disk" "/var/vcap/data"
