@@ -34,6 +34,8 @@ import           Kubernetes.Model.V1.SecurityContext    (SecurityContext)
 import qualified Kubernetes.Model.V1.SecurityContext    as SecurityContext
 import           Kubernetes.Model.V1.Volume             (Volume)
 import qualified Kubernetes.Model.V1.Volume             as Volume
+import           Kubernetes.Model.V1.VolumeMount        (VolumeMount)
+import qualified Kubernetes.Model.V1.VolumeMount        as VolumeMount
 
 import           Control.Exception.Safe
 import           Control.Monad.Reader
@@ -190,6 +192,26 @@ spec = describe "createVm" $ do
                lift $ volumeNames `shouldContain` ["agent-settings"]
                lift $ secretVolumes `shouldContain` [mkSecretVolumeSource & SecretVolumeSource.secretName .~ Just "agent-settings-test-agent"]
 
+    it "with agent settings mounted as secret volume" $ do
+     void $ runStubT'
+              access
+              emptyKube' {
+                images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
+              } $ do
+              (Base.VmId vmId) <- createVm
+                        (Base.AgentId "test-agent")
+                        (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
+                        (Base.VmProperties $ Object HashMap.empty)
+                        (Base.Networks $ Object HashMap.empty)
+                        [Base.VolumeId ""]
+                        (Base.Environment HashMap.empty)
+
+              lift $ vmId `shouldBe` "test-agent"
+              maybePod <- getPod "bosh" vmId
+              let hasMount :: VolumeMount -> Bool
+                  hasMount mount = mount ^. VolumeMount.name == "agent-settings"
+              lift $ (maybePod ^.. _Just.container.Container.volumeMounts._Just.each.VolumeMount.name) `shouldContain` ["agent-settings"]
+              lift $ (maybePod ^.. _Just.container.Container.volumeMounts._Just.each.filtered hasMount.VolumeMount.mountPath) `shouldContain` ["/var/vcap/bosh/settings"]
 
     it "with priviledged container" $ do
      void $ runStubT'
@@ -318,3 +340,28 @@ spec = describe "createVm" $ do
 
 
 
+  -- it "should create a Pod with 'run_agent.sh' mouted at '/var/vcap/bosh'" $ do
+  --   (_, s, _) <- runStubT'
+  --                  access
+  --                  emptyKube' {
+  --                    images = HashSet.singleton "test-stemcell"
+  --                  } $ do
+  --                  (Base.VmId vmId) <- createVm
+  --                            (Base.AgentId "test-agent")
+  --                            (Base.StemcellId "test-stemcell")
+  --                            (Base.VmProperties $ Object HashMap.empty)
+  --                            (Base.Networks $ Object HashMap.empty)
+  --                            [Base.VolumeId ""]
+  --                            (Base.Environment HashMap.empty)
+  --
+  --                  lift $ vmId `shouldBe` "test-agent"
+  --                  maybePod <- getPod "bosh" vmId
+  --                  lift $ maybePod `shouldSatisfy` isJust
+  --                  let Just pod = maybePod
+                  --  lift $ (secret ^. Secret.data_) & decode base64
+                   -- secret with agent start script exists
+                   -- volume points to secret
+                   -- volumeMount points to volume
+                  --  lift $ (pod ^.. Pod.volumes) `shouldContain` Just
+    -- (HashMap.size $ events s) `shouldBe` 1
+    -- pure ()

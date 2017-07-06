@@ -25,6 +25,8 @@ import           Kubernetes.Model.V1.Pod             (Pod, mkPod)
 import qualified Kubernetes.Model.V1.Pod             as Pod hiding (status)
 import           Kubernetes.Model.V1.Volume             (Volume, mkVolume)
 import qualified Kubernetes.Model.V1.Volume             as Volume
+import           Kubernetes.Model.V1.VolumeMount             (VolumeMount, mkVolumeMount)
+import qualified Kubernetes.Model.V1.VolumeMount             as VolumeMount
 import           Kubernetes.Model.V1.PodStatus             (PodStatus, mkPodStatus)
 import qualified Kubernetes.Model.V1.PodStatus             as PodStatus
 import           Kubernetes.Model.V1.PodList             (PodList, mkPodList)
@@ -90,12 +92,14 @@ createVm agentId stemcell cloudProperties (Base.Networks networkSpec) diskLocali
     in createSecret namespace secret
   pod <- let
     securityContext = mkSecurityContext
-                      & SecurityContext.privileged .~ Just True
-                      & SecurityContext.runAsUser .~ Just 0
+                      & SecurityContext.privileged ?~ True
+                      & SecurityContext.runAsUser ?~ 0
     container       = Pod.newContainer "bosh" (Unwrapped stemcell)
+                    & Container.volumeMounts.non [] %~ (settingsVolumeMount <|)
     settingsVolume  = mkVolume "agent-settings"
-                      & Volume.secret .~ (Just $ mkSecretVolumeSource
-                      & SecretVolumeSource.secretName .~ (Just $ secret ^. Metadata.name))
+                      & Volume.secret ?~ (mkSecretVolumeSource
+                      & SecretVolumeSource.secretName ?~ (secret ^. Metadata.name))
+    settingsVolumeMount = mkVolumeMount "agent-settings" "/var/vcap/bosh/settings"
     pod             = Pod.newPod (Unwrapped agentId) container
                       & Metadata.labels .~ labels
                       & Pod.container.Container.securityContext .~ Just securityContext
