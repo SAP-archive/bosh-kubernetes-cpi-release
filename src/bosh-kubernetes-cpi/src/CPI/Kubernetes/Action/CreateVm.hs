@@ -75,7 +75,7 @@ createVm ::
   -> Base.DiskLocality
   -> Base.Environment
   -> m Base.VmId
-createVm agentId stemcell cloudProperties (Base.Networks networkSpec) diskLocality env = do
+createVm agentId stemcell cloudProperties networks diskLocality env = do
   logDebug $ "Create VM for agent '" <> Unwrapped agentId <> "'"
   let labels = HashMap.empty
                     & HashMap.insert "bosh.cloudfoundry.org/agent-id" (toJSON agentId)
@@ -85,7 +85,7 @@ createVm agentId stemcell cloudProperties (Base.Networks networkSpec) diskLocali
     secret = newSecret ("agent-settings-" <> Unwrapped agentId)
              & Metadata.labels .~ labels
              & data' .~ HashMap.singleton "settings.json" (toJSON $ Base64.encodeJSON settings)
-    settings = Base.initialAgentSettings agentId blobstore env ntp mbus
+    settings = Base.initialAgentSettings agentId networks blobstore env ntp mbus
     blobstore = agent config ^? at "blobstore"._Just._JSON
     ntp = agent config ^. at "ntp"._Just._JSON
     mbus = agent config ^. at "mbus"._Just._String

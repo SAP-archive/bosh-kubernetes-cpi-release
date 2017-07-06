@@ -103,7 +103,7 @@ spec = describe "createVm" $ do
                 (Base.AgentId "test-agent")
                 (Base.StemcellId "some-image")
                 (Base.VmProperties $ Object HashMap.empty)
-                (Base.Networks $ Object HashMap.empty)
+                (Base.Networks HashMap.empty)
                 [Base.VolumeId ""]
                 (Base.Environment HashMap.empty)
 
@@ -122,7 +122,7 @@ spec = describe "createVm" $ do
                   (Base.AgentId "test-agent")
                   (Base.StemcellId "some-image")
                   (Base.VmProperties $ Object HashMap.empty)
-                  (Base.Networks $ Object HashMap.empty)
+                  (Base.Networks HashMap.empty)
                   [Base.VolumeId ""]
                   (Base.Environment HashMap.empty)
 
@@ -142,7 +142,7 @@ spec = describe "createVm" $ do
                   (Base.AgentId "test-agent")
                   (Base.StemcellId "some-image")
                   (Base.VmProperties $ Object HashMap.empty)
-                  (Base.Networks $ Object HashMap.empty)
+                  (Base.Networks HashMap.empty)
                   [Base.VolumeId ""]
                   (Base.Environment HashMap.empty)
 
@@ -160,7 +160,7 @@ spec = describe "createVm" $ do
                          (Base.AgentId "test-agent")
                          (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
                          (Base.VmProperties $ Object HashMap.empty)
-                         (Base.Networks $ Object HashMap.empty)
+                         (Base.Networks HashMap.empty)
                          [Base.VolumeId ""]
                          (Base.Environment HashMap.empty)
 
@@ -180,7 +180,7 @@ spec = describe "createVm" $ do
                          (Base.AgentId "test-agent")
                          (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
                          (Base.VmProperties $ Object HashMap.empty)
-                         (Base.Networks $ Object HashMap.empty)
+                         (Base.Networks HashMap.empty)
                          [Base.VolumeId ""]
                          (Base.Environment HashMap.empty)
 
@@ -202,7 +202,7 @@ spec = describe "createVm" $ do
                         (Base.AgentId "test-agent")
                         (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
                         (Base.VmProperties $ Object HashMap.empty)
-                        (Base.Networks $ Object HashMap.empty)
+                        (Base.Networks HashMap.empty)
                         [Base.VolumeId ""]
                         (Base.Environment HashMap.empty)
 
@@ -223,7 +223,7 @@ spec = describe "createVm" $ do
                         (Base.AgentId "test-agent")
                         (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
                         (Base.VmProperties $ Object HashMap.empty)
-                        (Base.Networks $ Object HashMap.empty)
+                        (Base.Networks HashMap.empty)
                         [Base.VolumeId ""]
                         (Base.Environment HashMap.empty)
 
@@ -245,7 +245,7 @@ spec = describe "createVm" $ do
                               (Base.AgentId "test-agent")
                               (Base.StemcellId "test-stemcell")
                               (Base.VmProperties $ Object HashMap.empty)
-                              (Base.Networks $ Object HashMap.empty)
+                              (Base.Networks HashMap.empty)
                               [Base.VolumeId ""]
                               (Base.Environment HashMap.empty)
 
@@ -267,7 +267,7 @@ spec = describe "createVm" $ do
                        (Base.AgentId "test-agent")
                        (Base.StemcellId "some-image")
                        (Base.VmProperties $ Object HashMap.empty)
-                       (Base.Networks $ Object HashMap.empty)
+                       (Base.Networks HashMap.empty)
                        [Base.VolumeId ""]
                        (Base.Environment HashMap.empty)
 
@@ -285,7 +285,7 @@ spec = describe "createVm" $ do
                          (Base.AgentId "test-agent")
                          (Base.StemcellId "some-image")
                          (Base.VmProperties $ Object HashMap.empty)
-                         (Base.Networks $ Object HashMap.empty)
+                         (Base.Networks HashMap.empty)
                          [Base.VolumeId ""]
                          (Base.Environment HashMap.empty)
 
@@ -302,7 +302,7 @@ spec = describe "createVm" $ do
                          (Base.AgentId "test-agent")
                          (Base.StemcellId "some-image")
                          (Base.VmProperties $ Object HashMap.empty)
-                         (Base.Networks $ Object HashMap.empty)
+                         (Base.Networks HashMap.empty)
                          [Base.VolumeId ""]
                          (Base.Environment HashMap.empty)
 
@@ -310,7 +310,7 @@ spec = describe "createVm" $ do
                lift $ (maybeSecret ^.. _Just.labels.at "bosh.cloudfoundry.org/agent-id"._Just._String) `shouldBe` ["test-agent"]
 
     it "with encoded data" $ do
-      let initialSettings = Base.initialAgentSettings (Wrapped "test-agent") (Just $ Wrapped blobstore) (Wrapped env) ntp mbus
+      let initialSettings = Base.initialAgentSettings (Wrapped "test-agent") (Wrapped HashMap.empty) (Just $ Wrapped blobstore) (Wrapped env) ntp mbus
           blobstore = HashMap.singleton "provider" "local"
           env = HashMap.empty
           ntp = ["my.time.host"]
@@ -329,7 +329,7 @@ spec = describe "createVm" $ do
                          (Base.AgentId "test-agent")
                          (Base.StemcellId "some-image")
                          (Base.VmProperties $ Object HashMap.empty)
-                         (Base.Networks $ Object HashMap.empty)
+                         (Base.Networks HashMap.empty)
                          [Base.VolumeId ""]
                          (Base.Environment HashMap.empty)
 
@@ -350,7 +350,7 @@ spec = describe "createVm" $ do
   --                            (Base.AgentId "test-agent")
   --                            (Base.StemcellId "test-stemcell")
   --                            (Base.VmProperties $ Object HashMap.empty)
-  --                            (Base.Networks $ Object HashMap.empty)
+  --                            (Base.Networks HashMap.empty)
   --                            [Base.VolumeId ""]
   --                            (Base.Environment HashMap.empty)
   --

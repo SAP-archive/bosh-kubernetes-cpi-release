@@ -89,7 +89,7 @@ instance Base.MonadCpi Config IO where
     -> Base.DiskLocality
     -> Base.Environment
     -> Base.Cpi Config IO Base.VmId
-  createVm agentId stemcell cloudProperties (Base.Networks networkSpec) diskLocality env = do
+  createVm agentId stemcell cloudProperties networkSpec diskLocality env = do
     logDebug $ "Create VM for agent '" <> Unwrapped agentId <> "'"
     let labels = HashMap.empty
                       & HashMap.insert "agentId" (toJSON agentId)
@@ -98,7 +98,8 @@ instance Base.MonadCpi Config IO where
       settings :: Object
       settings = agent config
                  & HashMap.insert "agent_id" (toJSON agentId)
-                 & HashMap.insert "networks" (toJSON (networkSpec & networks._Object.preconfigured .~ Bool True))
+                --  TODO no need to fix, will be deleted soon
+                --  & HashMap.insert "networks" (toJSON (networkSpec & _Unwrapped.each._Unwrapped._Object.preconfigured .~ Bool True))
                  & HashMap.insert "env" (toJSON env)
                  & HashMap.insert "disks" (Object $ HashMap.singleton "system" (String "/dev/sda")
                                                   & HashMap.insert "persistent" (Object HashMap.empty))
