@@ -36,6 +36,8 @@ import qualified Kubernetes.Model.V1.PodSpec         as PodSpec
 import           Kubernetes.Model.V1.Secret          (Secret, mkSecret)
 import qualified Kubernetes.Model.V1.SecretVolumeSource          as SecretVolumeSource
 import           Kubernetes.Model.V1.SecretVolumeSource          (SecretVolumeSource, mkSecretVolumeSource)
+import qualified Kubernetes.Model.V1.EmptyDirVolumeSource          as EmptyDirVolumeSource
+import           Kubernetes.Model.V1.EmptyDirVolumeSource          (EmptyDirVolumeSource, mkEmptyDirVolumeSource)
 import qualified Kubernetes.Model.V1.Secret          as Secret
 import           Kubernetes.Model.V1.SecretList          (SecretList, mkSecretList)
 import qualified Kubernetes.Model.V1.SecretList          as SecretList
@@ -95,7 +97,11 @@ createVm agentId stemcell cloudProperties networks diskLocality env = do
                       & SecurityContext.privileged ?~ True
                       & SecurityContext.runAsUser ?~ 0
     container       = Pod.newContainer "bosh" (Unwrapped stemcell)
-                    & Container.volumeMounts.non [] %~ (settingsVolumeMount <|)
+                      & Container.volumeMounts.non [] %~ (settingsVolumeMount <|)
+                      & Container.volumeMounts.non [] %~ (ephemeralVolumeMount <|)
+    ephemeralVolume = mkVolume "ephemeral-disk"
+                      & Volume.emptyDir ?~ mkEmptyDirVolumeSource
+    ephemeralVolumeMount = mkVolumeMount "ephemeral-disk" "/var/vcap/data"
     settingsVolume  = mkVolume "agent-settings"
                       & Volume.secret ?~ (mkSecretVolumeSource
                       & SecretVolumeSource.secretName ?~ (secret ^. Metadata.name))
@@ -104,6 +110,7 @@ createVm agentId stemcell cloudProperties networks diskLocality env = do
                       & Metadata.labels .~ labels
                       & Pod.container.Container.securityContext .~ Just securityContext
                       & Pod.volumes %~ (settingsVolume <|)
+                      & Pod.volumes %~ (ephemeralVolume <|)
     in createPod namespace pod
   _ <- waitForPod namespace (Unwrapped agentId) (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
   pure $ podName pod

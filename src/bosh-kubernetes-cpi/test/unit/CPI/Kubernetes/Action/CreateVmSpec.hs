@@ -192,6 +192,47 @@ spec = describe "createVm" $ do
                lift $ volumeNames `shouldContain` ["agent-settings"]
                lift $ secretVolumes `shouldContain` [mkSecretVolumeSource & SecretVolumeSource.secretName .~ Just "agent-settings-test-agent"]
 
+    it "with an empty dir attached" $ do
+      void $ runStubT'
+               access
+               emptyKube' {
+                 images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
+               } $ do
+               (Base.VmId vmId) <- createVm
+                         (Base.AgentId "test-agent")
+                         (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
+                         (Base.VmProperties $ Object HashMap.empty)
+                         (Base.Networks HashMap.empty)
+                         [Base.VolumeId ""]
+                         (Base.Environment HashMap.empty)
+
+               maybePod <- getPod "bosh" vmId
+               lift $ maybePod `shouldSatisfy` isJust
+               let Just pod = maybePod
+                   volumeNames = pod ^.. (Pod.volumes.each.Volume.name)
+               lift $ volumeNames `shouldContain` ["ephemeral-disk"]
+
+    it "with ephermeral disk mounted as empty dir volume" $ do
+      void $ runStubT'
+               access
+               emptyKube' {
+                 images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
+               } $ do
+               (Base.VmId vmId) <- createVm
+                         (Base.AgentId "test-agent")
+                         (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
+                         (Base.VmProperties $ Object HashMap.empty)
+                         (Base.Networks HashMap.empty)
+                         [Base.VolumeId ""]
+                         (Base.Environment HashMap.empty)
+
+               lift $ vmId `shouldBe` "test-agent"
+               maybePod <- getPod "bosh" vmId
+               let hasMount :: VolumeMount -> Bool
+                   hasMount mount = mount ^. VolumeMount.name == "ephemeral-disk"
+               lift $ (maybePod ^.. _Just.container.Container.volumeMounts._Just.each.VolumeMount.name) `shouldContain` ["ephemeral-disk"]
+               lift $ (maybePod ^.. _Just.container.Container.volumeMounts._Just.each.filtered hasMount.VolumeMount.mountPath) `shouldContain` ["/var/vcap/data"]
+
     it "with agent settings mounted as secret volume" $ do
      void $ runStubT'
               access
