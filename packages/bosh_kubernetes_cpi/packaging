@@ -14,6 +14,8 @@ pushd $STACK_ROOT
 popd
 
 pushd bosh-kubernetes-cpi
+  dpkg -i ${BOSH_PACKAGES_DIR}/libgmp-dev/libgmpxx4ldbl_5.1.3+dfsg-1ubuntu1_amd64.deb
+  dpkg -i ${BOSH_PACKAGES_DIR}/libgmp-dev/libgmp-dev_5.1.3+dfsg-1ubuntu1_amd64.deb
   HOME=$TMP_HOME $STACK build --system-ghc --ghc-options=-O0
   cp $(HOME=$TMP_HOME $STACK exec --system-ghc -- which bosh-kubernetes-cpi) ${BOSH_INSTALL_TARGET}
 popd

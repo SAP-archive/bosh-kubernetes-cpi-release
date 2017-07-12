@@ -1,0 +1,4 @@
+set -x
+
+cp libgmp-dev/libgmp-dev_5.1.3+dfsg-1ubuntu1_amd64.deb ${BOSH_INSTALL_TARGET}
+cp libgmpxx4ldbl/libgmpxx4ldbl_5.1.3+dfsg-1ubuntu1_amd64.deb ${BOSH_INSTALL_TARGET}
