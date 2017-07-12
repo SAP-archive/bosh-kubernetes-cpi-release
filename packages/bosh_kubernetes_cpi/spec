@@ -4,7 +4,6 @@ name: bosh_kubernetes_cpi
 dependencies:
   - stack
   - ghc-8.0.1
-  - libgmp-dev
 
 files:
   - bosh_kubernetes_cpi/dependencies.source.tgz
