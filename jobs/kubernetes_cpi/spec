@@ -5,6 +5,7 @@ templates:
   cpi.json.erb: config/cpi.json
 
 packages:
+  - gmp
   - bosh_kubernetes_cpi
 
 properties:
