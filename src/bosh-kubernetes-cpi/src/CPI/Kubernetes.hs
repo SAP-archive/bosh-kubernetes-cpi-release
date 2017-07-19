@@ -120,18 +120,18 @@ instance Base.MonadCpi Config IO where
       in createSecret secret
     logDebug "Secret uploaded"
     vmType <- VmTypes.parseVmProperties cloudProperties
-    let
-      serviceSelector = HashMap.empty
-                        & HashMap.insert "agentId" (toJSON agentId)
-      services = VmTypes.createServices vmType
-              & each.Service.metadata._Just.ObjectMeta.labels
-              .~ Just (Any.Any labels)
-              & each.Service.spec._Just.ServiceSpec.selector
-              .~ Just (Any.Any serviceSelector)
-      in
-        do
-          logDebug $ "Create Services" <> (Text.pack.show) services
-          createService `mapM` services
+    -- let
+    --   serviceSelector = HashMap.empty
+    --                     & HashMap.insert "agentId" (toJSON agentId)
+    --   services = VmTypes.createServices vmType
+    --           & each.Service.metadata._Just.ObjectMeta.labels
+    --           .~ Just (Any.Any labels)
+    --           & each.Service.spec._Just.ServiceSpec.selector
+    --           .~ Just (Any.Any serviceSelector)
+    --   in
+    --     do
+    --       logDebug $ "Create Services" <> (Text.pack.show) services
+    --       createService `mapM` services
     pod <- let
       securityContext = SecurityContext.mkSecurityContext
                         & SecurityContext.privileged .~ Just True

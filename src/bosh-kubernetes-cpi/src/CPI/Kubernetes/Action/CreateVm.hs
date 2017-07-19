@@ -1,67 +1,82 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleContexts    #-}
 
 module CPI.Kubernetes.Action.CreateVm(
   createVm
 ) where
 
-import  qualified         CPI.Base                            as Base
+import qualified CPI.Base                                 as Base
 import           CPI.Kubernetes.Config
-import qualified CPI.Kubernetes.Model                as Model
-import qualified CPI.Kubernetes.Resource.Pod as Pod
-import  CPI.Kubernetes.Resource.Metadata as Metadata
-import           CPI.Kubernetes.Resource.Pod (MonadPod, createPod, waitForPod)
-import           CPI.Kubernetes.Resource.Secret (MonadSecret, newSecret, data', createSecret)
-import  qualified         CPI.Kubernetes.Resource.Secret as Secret
+import           CPI.Kubernetes.Resource.Metadata         as Metadata
+import           CPI.Kubernetes.Resource.Pod              (MonadPod, createPod,
+                                                           waitForPod)
+import qualified CPI.Kubernetes.Resource.Pod              as Pod
+import           CPI.Kubernetes.Resource.Secret           (MonadSecret,
+                                                           createSecret, data',
+                                                           newSecret)
+import qualified CPI.Kubernetes.Resource.Secret           as Secret
+import           CPI.Kubernetes.Resource.Service          (MonadService, getService,
+                                                           updateService)
+import qualified CPI.Kubernetes.Resource.Service          as Service
+import qualified CPI.Kubernetes.VmTypes                   as VmTypes
 import           Resource
 
-import           Kubernetes.Model.V1.Any             (Any)
-import qualified Kubernetes.Model.V1.Any             as Any
-import           Kubernetes.Model.V1.Container       (Container, mkContainer)
-import qualified Kubernetes.Model.V1.Container       as Container
-import           Kubernetes.Model.V1.ObjectMeta      (ObjectMeta, mkObjectMeta)
-import qualified Kubernetes.Model.V1.ObjectMeta      as ObjectMeta
-import           Kubernetes.Model.V1.Pod             (Pod, mkPod)
-import qualified Kubernetes.Model.V1.Pod             as Pod hiding (status)
-import           Kubernetes.Model.V1.Volume             (Volume, mkVolume)
-import qualified Kubernetes.Model.V1.Volume             as Volume
-import           Kubernetes.Model.V1.VolumeMount             (VolumeMount, mkVolumeMount)
-import qualified Kubernetes.Model.V1.VolumeMount             as VolumeMount
-import           Kubernetes.Model.V1.PodStatus             (PodStatus, mkPodStatus)
-import qualified Kubernetes.Model.V1.PodStatus             as PodStatus
-import           Kubernetes.Model.V1.PodList             (PodList, mkPodList)
-import qualified Kubernetes.Model.V1.PodList             as PodList
-import           Kubernetes.Model.V1.PodSpec         (PodSpec, mkPodSpec)
-import qualified Kubernetes.Model.V1.PodSpec         as PodSpec
-import           Kubernetes.Model.V1.Secret          (Secret, mkSecret)
-import qualified Kubernetes.Model.V1.SecretVolumeSource          as SecretVolumeSource
-import           Kubernetes.Model.V1.SecretVolumeSource          (SecretVolumeSource, mkSecretVolumeSource)
-import qualified Kubernetes.Model.V1.EmptyDirVolumeSource          as EmptyDirVolumeSource
-import           Kubernetes.Model.V1.EmptyDirVolumeSource          (EmptyDirVolumeSource, mkEmptyDirVolumeSource)
-import qualified Kubernetes.Model.V1.Secret          as Secret
-import           Kubernetes.Model.V1.SecretList          (SecretList, mkSecretList)
-import qualified Kubernetes.Model.V1.SecretList          as SecretList
-import           Kubernetes.Model.V1.SecurityContext (SecurityContext,
-                                                      mkSecurityContext)
-import qualified Kubernetes.Model.V1.SecurityContext as SecurityContext
+import           Kubernetes.Model.V1.Any                  (Any)
+import qualified Kubernetes.Model.V1.Any                  as Any
+import           Kubernetes.Model.V1.Container            (Container,
+                                                           mkContainer)
+import qualified Kubernetes.Model.V1.Container            as Container
+import           Kubernetes.Model.V1.EmptyDirVolumeSource (EmptyDirVolumeSource, mkEmptyDirVolumeSource)
+import qualified Kubernetes.Model.V1.EmptyDirVolumeSource as EmptyDirVolumeSource
+import           Kubernetes.Model.V1.ObjectMeta           (ObjectMeta,
+                                                           mkObjectMeta)
+import qualified Kubernetes.Model.V1.ObjectMeta           as ObjectMeta
+import           Kubernetes.Model.V1.Pod                  (Pod, mkPod)
+import qualified Kubernetes.Model.V1.Pod                  as Pod hiding (status)
+import           Kubernetes.Model.V1.PodList              (PodList, mkPodList)
+import qualified Kubernetes.Model.V1.PodList              as PodList
+import           Kubernetes.Model.V1.PodSpec              (PodSpec, mkPodSpec)
+import qualified Kubernetes.Model.V1.PodSpec              as PodSpec
+import           Kubernetes.Model.V1.PodStatus            (PodStatus,
+                                                           mkPodStatus)
+import qualified Kubernetes.Model.V1.PodStatus            as PodStatus
+import           Kubernetes.Model.V1.Secret               (Secret, mkSecret)
+import qualified Kubernetes.Model.V1.Secret               as Secret
+import           Kubernetes.Model.V1.Service               (Service, mkService)
+import qualified Kubernetes.Model.V1.Service               as Service
+import           Kubernetes.Model.V1.SecretList           (SecretList,
+                                                           mkSecretList)
+import qualified Kubernetes.Model.V1.SecretList           as SecretList
+import           Kubernetes.Model.V1.SecretVolumeSource   (SecretVolumeSource,
+                                                           mkSecretVolumeSource)
+import qualified Kubernetes.Model.V1.SecretVolumeSource   as SecretVolumeSource
+import           Kubernetes.Model.V1.SecurityContext      (SecurityContext,
+                                                           mkSecurityContext)
+import qualified Kubernetes.Model.V1.SecurityContext      as SecurityContext
+import           Kubernetes.Model.V1.Volume               (Volume, mkVolume)
+import qualified Kubernetes.Model.V1.Volume               as Volume
+import           Kubernetes.Model.V1.VolumeMount          (VolumeMount,
+                                                           mkVolumeMount)
+import qualified Kubernetes.Model.V1.VolumeMount          as VolumeMount
 
-import qualified Data.HashMap.Strict                 as HashMap
-import           Data.Text                           (Text)
-import qualified Data.Text                           as Text
-import Data.Text.Encoding
-import qualified CPI.Kubernetes.Base64 as Base64
-import Data.ByteString.Lazy (toStrict)
+import qualified CPI.Kubernetes.Base64                    as Base64
+import           Data.ByteString.Lazy                     (toStrict)
+import qualified Data.HashMap.Strict                      as HashMap
+import           Data.Text                                (Text)
+import qualified Data.Text                                as Text
+import           Data.Text.Encoding
 
+import           Control.Lens
+import           Control.Lens.Wrapped
 import           Control.Monad.Log
-import Control.Monad.Reader
-import Control.Lens
-import Data.Aeson.Lens
-import Data.Semigroup
+import           Control.Monad.Reader
+import           Data.Aeson.Lens
+import           Data.Semigroup
 
+import           Control.Exception.Safe
+import           Control.Monad.FileSystem
 import           Data.Aeson
-import qualified Data.Aeson                          as Aeson
-import Control.Exception.Safe
-import Control.Monad.FileSystem
+import qualified Data.Aeson                               as Aeson
 
 createVm ::
     (  HasConfig c
@@ -69,6 +84,7 @@ createVm ::
      , MonadLog (WithSeverity Text) m
      , MonadFileSystem m
      , MonadPod m
+     , MonadService m
      , MonadSecret m) =>
      Base.AgentId
   -> Base.StemcellId
@@ -126,10 +142,27 @@ createVm agentId stemcell cloudProperties networks diskLocality env = do
                       & Pod.volumes %~ (settingsVolume <|)
                       & Pod.volumes %~ (ephemeralVolume <|)
     in createPod namespace pod
+  vmType <- VmTypes.parseVmProperties cloudProperties
+  let services = vmType ^. VmTypes.services
+  services `forM_` (`assignTo` agentId)
   _ <- waitForPod namespace (Unwrapped agentId) (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
-  pure $ podName pod
-    where
-      podName :: Pod.Pod -> Base.VmId
-      podName pod = Base.VmId $ pod ^. Metadata.name
-      secretName :: Secret.Secret -> Text
-      secretName = view (Secret.metadata . _Just . ObjectMeta.name . _Just)
+  pure $ Base.VmId $ pod ^. name
+
+assignTo ::
+  (  HasConfig c
+   , MonadReader c m
+   , MonadLog (WithSeverity Text) m
+   , MonadFileSystem m
+   , MonadService m) => VmTypes.Service -> Base.AgentId -> m (Maybe Service)
+service `assignTo` agentId = do
+  config <- asks asConfig
+  namespace <- config & clusterAccess & namespace
+  s <- getService namespace $ service ^. VmTypes.serviceName
+  case s of
+    Just s' ->
+      let s'' = s'
+             & label "bosh.cloudfoundry.org/agent-id" .~ (Unwrapped agentId)
+             & Service.podSelector.at "bosh.cloudfoundry.org/agent-id".non ""._String .~ (Unwrapped agentId)
+      in
+        Just <$> updateService namespace s''
+    Nothing -> throwM $ Base.CloudError $ "Service '" <> service ^. VmTypes.serviceName <> "' could not be found."

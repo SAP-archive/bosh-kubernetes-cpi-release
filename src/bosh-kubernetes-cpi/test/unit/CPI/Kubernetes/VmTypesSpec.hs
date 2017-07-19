@@ -30,15 +30,7 @@ spec = do
             {
               "services": [
                 {
-                  "name": "my-service",
-                  "type": "NodePort",
-                  "ports": [
-                    {
-                      "name": "my-port",
-                      "port": 22,
-                      "node_port": 30022
-                    }
-                  ]
+                  "name": "my-service"
                 }
               ]
             }
@@ -47,12 +39,6 @@ spec = do
           result `shouldBe` vmProperties {
             _services = [Service {
                 _serviceName = "my-service"
-              , _serviceType = NodePort
-              , _servicePorts = [ServicePort {
-                  _portName = "my-port"
-                , _port = 22
-                , _nodePort = 30022
-              }]
             }]
           }
       context "given an invalid service spec with unknown service type" $ do
@@ -61,12 +47,11 @@ spec = do
             {
               "services": [
                 {
-                  "name": "my-service",
-                  "type": "UnknownType"
+                  "unknown-key": "value"
                 }
               ]
             }
           |]
           result <- try (parseVmProperties service)
           let Left (Base.CloudError errorMessage) = result
-          errorMessage `shouldBe` "Could not parse 'VmProperties': failed to parse field services: expected one of [NodePort], encountered '\"UnknownType\"'"
+          errorMessage `shouldBe` "Could not parse 'VmProperties': failed to parse field services: When parsing the record Service of type CPI.Kubernetes.VmTypes.Service the key name was not present."

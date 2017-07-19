@@ -30,10 +30,12 @@ library
                      , CPI.Kubernetes.Resource.Servant
                      , CPI.Kubernetes.Resource.Pod
                      , CPI.Kubernetes.Resource.Secret
+                     , CPI.Kubernetes.Resource.Service
                      , CPI.Kubernetes.Resource.Metadata
                      , CPI.Kubernetes.Resource.Stub.State
                      , CPI.Kubernetes.Resource.Stub.Pod
                      , CPI.Kubernetes.Resource.Stub.Secret
+                     , CPI.Kubernetes.Resource.Stub.Service
   build-depends:       base >= 4.7 && < 5
                      , bosh-cpi-haskell
                      , mtl
@@ -111,10 +113,12 @@ test-suite stub
   main-is:             Spec.hs
   other-modules:       PodSpec
                      , SecretSpec
+                     , ServiceSpec
   build-depends:       base
                      , hspec
                      , http-types
                      , aeson-qq
+                     , lens-aeson
                      , raw-strings-qq
                      , safe-exceptions
                      , bosh-cpi-haskell

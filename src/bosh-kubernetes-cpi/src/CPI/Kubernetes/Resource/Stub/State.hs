@@ -8,6 +8,7 @@ module CPI.Kubernetes.Resource.Stub.State(
   , ResourceMap
   , HasPods(..)
   , HasSecrets(..)
+  , HasServices(..)
   , emptyKube
   , StubConfig(..)
   , HasImages(..)
@@ -35,6 +36,7 @@ import           Control.Monad.Stub.Wait
 import           Control.Monad.Stub.Time
 import           Kubernetes.Model.V1.Pod       (Pod)
 import           Kubernetes.Model.V1.Secret    (Secret)
+import           Kubernetes.Model.V1.Service   (Service)
 
 type ResourceMap r = HashMap (Text, Text) r
 
@@ -62,6 +64,18 @@ instance HasSecrets KubeState where
     secrets = ss
   }
 
+class HasServices a where
+  asServices :: a -> HashMap (Text, Text) Service
+  updateServices :: HashMap (Text, Text) Service -> a -> a
+  withServices :: (ResourceMap Service -> ResourceMap Service) -> a -> a
+  withServices f a = f (asServices a) `updateServices` a
+
+instance HasServices KubeState where
+  asServices = services
+  updateServices ss s = s {
+    services = ss
+  }
+
 instance HasFiles KubeState where
   asFiles = error "No file system available"
 
@@ -78,17 +92,19 @@ instance HasTimeline KubeState where
   }
 
 data KubeState = KubeState {
-    pods    :: HashMap (Text, Text) Pod
-  , secrets :: HashMap (Text, Text) Secret
-  , elapsed :: Elapsed
-  , events  :: HashMap Elapsed [KubeState -> KubeState]
-  , images  :: HashSet Text
+    pods     :: HashMap (Text, Text) Pod
+  , secrets  :: HashMap (Text, Text) Secret
+  , services :: HashMap (Text, Text) Service
+  , elapsed  :: Elapsed
+  , events   :: HashMap Elapsed [KubeState -> KubeState]
+  , images   :: HashSet Text
 }
 
 emptyKube :: KubeState
 emptyKube = KubeState {
     pods = HashMap.empty
   , secrets = HashMap.empty
+  , services = HashMap.empty
   , elapsed = 0
   , events = HashMap.empty
   , images = HashSet.empty

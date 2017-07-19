@@ -57,8 +57,11 @@ import           CPI.Kubernetes.Resource.Pod
 import qualified CPI.Kubernetes.Resource.Pod            as Pod
 import           CPI.Kubernetes.Resource.Secret         (getSecret)
 import qualified CPI.Kubernetes.Resource.Secret         as Secret
+import           CPI.Kubernetes.Resource.Service
+import qualified CPI.Kubernetes.Resource.Service        as Service
 import           CPI.Kubernetes.Resource.Stub.Pod
 import           CPI.Kubernetes.Resource.Stub.Secret
+import           CPI.Kubernetes.Resource.Stub.Service
 import           CPI.Kubernetes.Resource.Stub.State
 import           Resource
 
@@ -433,15 +436,68 @@ spec = describe "createVm" $ do
                emptyKube' {
                  images = HashSet.singleton "some-image"
                } $ do
-               (Base.VmId vmId) <- createVm
-                         (Base.AgentId "test-agent")
-                         (Base.StemcellId "some-image")
-                         (Base.VmProperties $ Object HashMap.empty)
-                         (Base.Networks HashMap.empty)
-                         [Base.VolumeId ""]
-                         (Base.Environment HashMap.empty)
+        (Base.VmId vmId) <- createVm
+                  (Base.AgentId "test-agent")
+                  (Base.StemcellId "some-image")
+                  (Base.VmProperties $ Object HashMap.empty)
+                  (Base.Networks HashMap.empty)
+                  [Base.VolumeId ""]
+                  (Base.Environment HashMap.empty)
 
-               maybeSecret <- getSecret "bosh" "agent-settings-test-agent"
-               let [encoded] = maybeSecret ^.. _Just.Secret.data'.at "settings.json"._Just._String
-               decoded <- Base64.decodeJSON encoded
-               lift $ decoded `shouldBe` initialSettings
+        maybeSecret <- getSecret "bosh" "agent-settings-test-agent"
+        let [encoded] = maybeSecret ^.. _Just.Secret.data'.at "settings.json"._Just._String
+        decoded <- Base64.decodeJSON encoded
+        lift $ decoded `shouldBe` initialSettings
+
+  context "when vm cloud_properties specify Services" $ do
+    context "when all Services exists" $ do
+      let emptyKube'' =
+              emptyKube' {
+                  images = HashSet.singleton "some-image"
+                , services = HashMap.fromList [
+                                          (("bosh", "my-service-1"), Service.newService "my-service-1")
+                                        , (("bosh", "my-service-2"), Service.newService "my-service-2")
+                                        ]
+              }
+      it "should point the Services to the Pod" $ do
+        void $ runStubT'
+                 access
+                 emptyKube'' $ do
+          (Base.VmId vmId) <- createVm
+                    (Base.AgentId "test-agent")
+                    (Base.StemcellId "some-image")
+                    (Base.VmProperties $ Object $ HashMap.singleton "services" $ toJSON [Object $ HashMap.singleton "name" "my-service-1", Object $ HashMap.singleton "name" "my-service-2"])
+                    (Base.Networks HashMap.empty)
+                    [Base.VolumeId ""]
+                    (Base.Environment HashMap.empty)
+
+          lift $ vmId `shouldBe` "test-agent"
+          maybePod <- getPod "bosh" vmId
+          lift $ maybePod `shouldSatisfy` isJust
+          maybeService <- getService "bosh" "my-service-1"
+          lift $ maybeService `shouldSatisfy` isJust
+          lift $ maybeService ^.. _Just.label "bosh.cloudfoundry.org/agent-id" `shouldBe` ["test-agent"]
+          lift $ maybeService ^.. _Just.Service.podSelector.at "bosh.cloudfoundry.org/agent-id"._Just `shouldBe` ["test-agent"]
+
+          maybeService <- getService "bosh" "my-service-2"
+          lift $ maybeService `shouldSatisfy` isJust
+          lift $ maybeService ^.. _Just.label "bosh.cloudfoundry.org/agent-id" `shouldBe` ["test-agent"]
+          lift $ maybeService ^.. _Just.Service.podSelector.at "bosh.cloudfoundry.org/agent-id"._Just `shouldBe` ["test-agent"]
+    context "when Services don't exist" $ do
+      it "should fail" $ do
+        let createVmAction = void $ runStubT'
+                               access
+                               emptyKube' {
+                                   images = HashSet.singleton "some-image"
+                               } $ do
+                                    void $ createVm
+                                              (Base.AgentId "test-agent")
+                                              (Base.StemcellId "some-image")
+                                              (Base.VmProperties $ Object $ HashMap.singleton "services" $ toJSON [Object $ HashMap.singleton "name" "my-service"])
+                                              (Base.Networks HashMap.empty)
+                                              [Base.VolumeId ""]
+                                              (Base.Environment HashMap.empty)
+        createVmAction `shouldThrow` cloudErrorWithMessage "Service 'my-service' could not be found."
+
+cloudErrorWithMessage :: Text -> Selector Base.CloudError
+cloudErrorWithMessage expectedMessage (Base.CloudError message) = expectedMessage == message
