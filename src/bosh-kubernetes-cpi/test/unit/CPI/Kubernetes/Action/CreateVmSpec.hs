@@ -257,7 +257,7 @@ spec = describe "createVm" $ do
                 let hasMount :: VolumeMount -> Bool
                     hasMount mount = mount ^. VolumeMount.name == "agent-settings"
                 lift $ (maybePod ^.. _Just.container.Container.volumeMounts._Just.each.VolumeMount.name) `shouldContain` ["agent-settings"]
-                lift $ (maybePod ^.. _Just.container.Container.volumeMounts._Just.each.filtered hasMount.VolumeMount.mountPath) `shouldContain` ["/var/vcap/bosh/settings"]
+                lift $ (maybePod ^.. _Just.container.Container.volumeMounts._Just.each.filtered hasMount.VolumeMount.mountPath) `shouldContain` ["/var/vcap/bosh/settings-source-file"]
 
       it "in priviledged mode" $ do
         void $ runStubT'
@@ -445,7 +445,7 @@ spec = describe "createVm" $ do
                   (Base.Environment HashMap.empty)
 
         maybeSecret <- getSecret "bosh" "agent-settings-test-agent"
-        let [encoded] = maybeSecret ^.. _Just.Secret.data'.at "settings.json"._Just._String
+        let [encoded] = maybeSecret ^.. _Just.Secret.data'.at "config.json"._Just._String
         decoded <- Base64.decodeJSON encoded
         lift $ decoded `shouldBe` initialSettings
 

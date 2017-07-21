@@ -62,6 +62,7 @@ import qualified Kubernetes.Model.V1.VolumeMount          as VolumeMount
 import qualified CPI.Kubernetes.Base64                    as Base64
 import           Data.ByteString.Lazy                     (toStrict)
 import qualified Data.HashMap.Strict                      as HashMap
+import  Data.HashMap.Strict                       (HashMap)
 import           Data.Text                                (Text)
 import qualified Data.Text                                as Text
 import           Data.Text.Encoding
@@ -102,7 +103,7 @@ createVm agentId stemcell cloudProperties networks diskLocality env = do
   secret <- let
     secret = newSecret ("agent-settings-" <> Unwrapped agentId)
              & Metadata.labels .~ labels
-             & data' .~ HashMap.singleton "settings.json" (toJSON $ Base64.encodeJSON settings)
+             & data' .~ HashMap.singleton "config.json" (toJSON $ Base64.encodeJSON settings)
     settings = Base.initialAgentSettings agentId networks blobstore env ntp mbus
     blobstore = agent config ^? at "blobstore"._Just._JSON
     ntp = agent config ^. at "ntp"._Just._JSON
@@ -135,7 +136,7 @@ createVm agentId stemcell cloudProperties networks diskLocality env = do
     settingsVolume  = mkVolume "agent-settings"
                       & Volume.secret ?~ (mkSecretVolumeSource
                       & SecretVolumeSource.secretName ?~ (secret ^. Metadata.name))
-    settingsVolumeMount = mkVolumeMount "agent-settings" "/var/vcap/bosh/settings"
+    settingsVolumeMount = mkVolumeMount "agent-settings" "/var/vcap/bosh/settings-source-file"
     pod             = Pod.newPod (Unwrapped agentId) container
                       & Metadata.labels .~ labels
                       & Pod.container.Container.securityContext .~ Just securityContext
