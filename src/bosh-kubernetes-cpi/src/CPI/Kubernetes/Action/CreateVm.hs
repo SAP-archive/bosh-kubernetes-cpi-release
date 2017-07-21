@@ -104,7 +104,8 @@ createVm agentId stemcell cloudProperties networks diskLocality env = do
     secret = newSecret ("agent-settings-" <> Unwrapped agentId)
              & Metadata.labels .~ labels
              & data' .~ HashMap.singleton "config.json" (toJSON $ Base64.encodeJSON settings)
-    settings = Base.initialAgentSettings agentId networks blobstore env ntp mbus
+    preconfiguredNetworks = networks & _Wrapped.each._Wrapped.at "preconfigured" ?~ Bool True
+    settings = Base.initialAgentSettings agentId preconfiguredNetworks blobstore env ntp mbus
     blobstore = agent config ^? at "blobstore"._Just._JSON
     ntp = agent config ^. at "ntp"._Just._JSON
     mbus = agent config ^. at "mbus"._Just._String

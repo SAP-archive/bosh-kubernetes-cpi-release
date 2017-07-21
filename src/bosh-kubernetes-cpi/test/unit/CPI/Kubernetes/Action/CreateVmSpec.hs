@@ -63,6 +63,7 @@ import           CPI.Kubernetes.Resource.Stub.Pod
 import           CPI.Kubernetes.Resource.Stub.Secret
 import           CPI.Kubernetes.Resource.Stub.Service
 import           CPI.Kubernetes.Resource.Stub.State
+import           Data.Aeson.QQ
 import           Resource
 
 instance HasStdin TestConfig where
@@ -441,6 +442,46 @@ spec = describe "createVm" $ do
                   (Base.StemcellId "some-image")
                   (Base.VmProperties $ Object HashMap.empty)
                   (Base.Networks HashMap.empty)
+                  [Base.VolumeId ""]
+                  (Base.Environment HashMap.empty)
+
+        maybeSecret <- getSecret "bosh" "agent-settings-test-agent"
+        let [encoded] = maybeSecret ^.. _Just.Secret.data'.at "config.json"._Just._String
+        decoded <- Base64.decodeJSON encoded
+        lift $ decoded `shouldBe` initialSettings
+
+    it "with all networks set to preconfigured" $ do
+      --  & HashMap.insert "networks" (toJSON (networkSpec & _Unwrapped.each._Unwrapped._Object.preconfigured .~ Bool True))
+      let networks = Wrapped $ HashMap.singleton
+                                "default" $
+                                Wrapped $ HashMap.fromList [("type", String "dynamic")]
+          preconfiguredNetworks :: Base.Networks
+          preconfiguredNetworks = Wrapped $ HashMap.singleton
+                                "default" $
+                                Wrapped $ HashMap.fromList [
+                                                              ("type", String "dynamic")
+                                                            , ("preconfigured", Bool True)
+                                                          ]
+          initialSettings = Base.initialAgentSettings (Wrapped "test-agent") preconfiguredNetworks (Just $ Wrapped blobstore) (Wrapped env) ntp mbus
+          blobstore = HashMap.singleton "provider" "local"
+          env = HashMap.empty
+          ntp = ["my.time.host"]
+          mbus = "http://my.mbus:1234"
+      let ?agent = HashMap.fromList [
+                  ("mbus" :: Text, toJSON mbus)
+                , ("blobstore", toJSON blobstore)
+                , ("ntp", toJSON ntp)]
+
+      void $ runStubT'
+               access
+               emptyKube' {
+                 images = HashSet.singleton "some-image"
+               } $ do
+        (Base.VmId vmId) <- createVm
+                  (Base.AgentId "test-agent")
+                  (Base.StemcellId "some-image")
+                  (Base.VmProperties $ Object HashMap.empty)
+                  networks
                   [Base.VolumeId ""]
                   (Base.Environment HashMap.empty)
 
