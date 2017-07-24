@@ -9,15 +9,15 @@ TMP_HOME=$(mktemp -d)
 export STACK_ROOT=$TMP_HOME/stack
 mkdir -p $STACK_ROOT
 
-EXTRA_INCLUDE_DIRS="--extra-include-dirs $BOSH_PACKAGES_DIR/gmp/include"
-EXTRA_LIB_DIRS="--extra-lib-dirs $BOSH_PACKAGES_DIR/gmp/lib"
+export LD_LIBRARY_PATH=$BOSH_PACKAGES_DIR/gmp/lib
+export LIBRARY_PATH=$BOSH_PACKAGES_DIR/gmp/lib
 
 pushd $STACK_ROOT
   tar xzf $BUILD_DIR/bosh_kubernetes_cpi/dependencies.source.tgz -C $STACK_ROOT
 popd
 
 pushd bosh-kubernetes-cpi
-  HOME=$TMP_HOME $STACK build --system-ghc --ghc-options=-O0 $EXTRA_INCLUDE_DIRS $EXTRA_LIB_DIRS
+  HOME=$TMP_HOME $STACK build --system-ghc --ghc-options=-O0
   cp $(HOME=$TMP_HOME $STACK exec --system-ghc -- which bosh-kubernetes-cpi) ${BOSH_INSTALL_TARGET}
 popd
 
