@@ -1,6 +1,6 @@
 bosh_kubernetes_cpi/dependencies.source.tgz:
-  size: 301955589
-  sha: 60fe624ead545c407be6dad239fafb85789caafd
+  size: 301955068
+  sha: 9557b51ff708dfbc91e8c17ce5e055b91fd5151a
 ghc/ghc-8.0.1-x86_64-apple-darwin.tar.xz:
   size: 118496652
   object_id: 8804f92b-2a54-431a-6eb0-12e9aca2d82c
