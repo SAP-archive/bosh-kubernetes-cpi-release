@@ -8,6 +8,7 @@ module CPI.Kubernetes.Config(
     Config(..)
   , HasConfig(..)
   , parseConfig
+  , parseClusterAccess
   , ClusterAccess(..)
   , Credentials(..)
 ) where

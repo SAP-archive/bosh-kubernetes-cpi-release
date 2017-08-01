@@ -10,6 +10,7 @@ module SecretSpec(spec) where
 
 import           Prelude                                hiding (readFile)
 
+import           StubRunner
 import           Test.Hspec
 
 import           Control.Lens
@@ -75,7 +76,7 @@ spec =
   describe "create" $ do
     let secret = newSecret "test"
     it "creates a secret with the given name" $ do
-      void $ run $ do
+      void $ run emptyStubConfig emptyKube $ do
         bracket
           (do
             createdSecret <- createSecret "default" secret
@@ -95,40 +96,3 @@ servantErrorWithStatusCode expectedStatusCode (FailureResponse (Status code _) _
 
 cloudErrorWithMessage :: Text -> Selector Base.CloudError
 cloudErrorWithMessage expectedMessage (Base.CloudError message) = expectedMessage == message
-
-type MR a = (forall m . (MonadSecret (m IO), MonadTrans m, MonadMask (m IO), MonadThrow (m IO)) => (m IO) a)
-
-run :: MR a -> IO a
-run f = do
-  cluster <- read . fromMaybe "False" <$> lookupEnv "KUBE_CLUSTER"
-  if cluster then
-          config `runResource` f
-        else do
-          (result, _, _::NoOutput) <- runStubT
-                                        emptyStubConfig
-                                        emptyKube
-                                        f
-          pure result
-
-config :: Config
-config = Config {
-    clusterAccess = access
-  , agent = undefined
-}
-
-access :: ClusterAccess
-access = ClusterAccess {
-    server = parseBaseUrl "https://192.168.99.100:8443"
-  , namespace = pure "default"
-  , credentials = ClientCertificate <$> readCredential "/Users/d043856/.minikube/apiserver.crt" "/Users/d043856/.minikube/apiserver.key"
-}
-
-
-readCredential :: (MonadThrow m, MonadFileSystem m) => Text -> Text -> m Credential
-readCredential certPath keyPath = do
-  cert <- readFile certPath
-  key <- readFile keyPath
-  either
-    (throwM . Base.ConfigParseException)
-    pure
-    (credentialLoadX509FromMemory cert key)

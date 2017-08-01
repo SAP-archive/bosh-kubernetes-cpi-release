@@ -8,11 +8,9 @@
 
 module ServiceSpec(spec) where
 
-import           Data.Monoid
-import           Debug.Trace
-
 import           Prelude                              hiding (readFile)
 
+import           StubRunner
 import           Test.Hspec
 
 import           Control.Lens
@@ -101,7 +99,7 @@ spec = describe "MonadService" $ do
       servicePort = newServicePort "test-port" 80
   describe "getService" $ do
     it "returns the service" $ do
-      void $ run $ do
+      void $ run emptyStubConfig emptyKube $ do
         withService "default" testService $ do
           service <- getService "default" $ testService ^. name
           lift $ service `shouldSatisfy` isJust
@@ -109,7 +107,7 @@ spec = describe "MonadService" $ do
 
   describe "update" $ do
     it "can add a label to the service" $ do
-      void $ run $ do
+      void $ run emptyStubConfig emptyKube $ do
         withService "default" testService $ do
           maybeService <- getService "default" $ testService ^. name
           lift $ maybeService `shouldSatisfy` isJust
@@ -123,7 +121,7 @@ spec = describe "MonadService" $ do
                             `shouldBe` ["test-agent"]
 
     it "can add a selector to the service" $ do
-      void $ run $ do
+      void $ run emptyStubConfig emptyKube $ do
         withService "default" testService $ do
           maybeService <- getService "default" $ testService ^. name
           lift $ maybeService `shouldSatisfy` isJust
@@ -142,40 +140,3 @@ servantErrorWithStatusCode expectedStatusCode (FailureResponse (Status code _) _
 
 cloudErrorWithMessage :: Text -> Selector Base.CloudError
 cloudErrorWithMessage expectedMessage (Base.CloudError message) = expectedMessage == message
-
-type MR a = (forall m . (MonadService (m IO), MonadTrans m, MonadMask (m IO), MonadThrow (m IO)) => (m IO) a)
-
-run :: MR a -> IO a
-run f = do
-  cluster <- read . fromMaybe "False" <$> lookupEnv "KUBE_CLUSTER"
-  if cluster then
-          config `runResource` f
-        else do
-          (result, _, _::NoOutput) <- runStubT
-                                        emptyStubConfig
-                                        emptyKube
-                                        f
-          pure result
-
-config :: Config
-config = Config {
-    clusterAccess = access
-  , agent = undefined
-}
-
-access :: ClusterAccess
-access = ClusterAccess {
-    server = parseBaseUrl "https://192.168.99.100:8443"
-  , namespace = pure "default"
-  , credentials = ClientCertificate <$> readCredential "/Users/d043856/.minikube/apiserver.crt" "/Users/d043856/.minikube/apiserver.key"
-}
-
-
-readCredential :: (MonadThrow m, MonadFileSystem m) => Text -> Text -> m Credential
-readCredential certPath keyPath = do
-  cert <- readFile certPath
-  key <- readFile keyPath
-  either
-    (throwM . Base.ConfigParseException)
-    pure
-    (credentialLoadX509FromMemory cert key)

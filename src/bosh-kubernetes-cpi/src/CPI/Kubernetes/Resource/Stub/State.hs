@@ -9,6 +9,7 @@ module CPI.Kubernetes.Resource.Stub.State(
   , HasPods(..)
   , HasSecrets(..)
   , HasServices(..)
+  , HasPVCs(..)
   , emptyKube
   , StubConfig(..)
   , HasImages(..)
@@ -19,24 +20,25 @@ module CPI.Kubernetes.Resource.Stub.State(
   , NoInput(..)
 ) where
 
-import           Prelude                       (const, error)
+import           Prelude                                   (const, error)
 
-import           Data.HashMap.Strict           (HashMap)
-import qualified Data.HashMap.Strict           as HashMap
-import           Data.HashSet                  (HashSet)
-import qualified Data.HashSet                  as HashSet
+import           Data.HashMap.Strict                       (HashMap)
+import qualified Data.HashMap.Strict                       as HashMap
+import           Data.HashSet                              (HashSet)
+import qualified Data.HashSet                              as HashSet
 import           Data.Hourglass
 import           Data.Monoid
-import           Data.Text                     (Text)
+import           Data.Text                                 (Text)
 
 import           Control.Monad.Stub.Console
 import           Control.Monad.Stub.FileSystem
 import           Control.Monad.Stub.Wait
 
 import           Control.Monad.Stub.Time
-import           Kubernetes.Model.V1.Pod       (Pod)
-import           Kubernetes.Model.V1.Secret    (Secret)
-import           Kubernetes.Model.V1.Service   (Service)
+import           Kubernetes.Model.V1.PersistentVolumeClaim (PersistentVolumeClaim)
+import           Kubernetes.Model.V1.Pod                   (Pod)
+import           Kubernetes.Model.V1.Secret                (Secret)
+import           Kubernetes.Model.V1.Service               (Service)
 
 type ResourceMap r = HashMap (Text, Text) r
 
@@ -76,6 +78,18 @@ instance HasServices KubeState where
     services = ss
   }
 
+class HasPVCs a where
+  asPVCs :: a -> HashMap (Text, Text) PersistentVolumeClaim
+  updatePVCs :: HashMap (Text, Text) PersistentVolumeClaim -> a -> a
+  withPVCs :: (ResourceMap PersistentVolumeClaim -> ResourceMap PersistentVolumeClaim) -> a -> a
+  withPVCs f a = f (asPVCs a) `updatePVCs` a
+
+instance HasPVCs KubeState where
+  asPVCs = persistentVolumeClaims
+  updatePVCs ps s = s {
+    persistentVolumeClaims = ps
+  }
+
 instance HasFiles KubeState where
   asFiles = error "No file system available"
 
@@ -92,12 +106,13 @@ instance HasTimeline KubeState where
   }
 
 data KubeState = KubeState {
-    pods     :: HashMap (Text, Text) Pod
-  , secrets  :: HashMap (Text, Text) Secret
-  , services :: HashMap (Text, Text) Service
-  , elapsed  :: Elapsed
-  , events   :: HashMap Elapsed [KubeState -> KubeState]
-  , images   :: HashSet Text
+    pods                   :: HashMap (Text, Text) Pod
+  , secrets                :: HashMap (Text, Text) Secret
+  , services               :: HashMap (Text, Text) Service
+  , persistentVolumeClaims :: HashMap (Text, Text) PersistentVolumeClaim
+  , elapsed                :: Elapsed
+  , events                 :: HashMap Elapsed [KubeState -> KubeState]
+  , images                 :: HashSet Text
 }
 
 emptyKube :: KubeState
@@ -105,6 +120,7 @@ emptyKube = KubeState {
     pods = HashMap.empty
   , secrets = HashMap.empty
   , services = HashMap.empty
+  , persistentVolumeClaims = HashMap.empty
   , elapsed = 0
   , events = HashMap.empty
   , images = HashSet.empty

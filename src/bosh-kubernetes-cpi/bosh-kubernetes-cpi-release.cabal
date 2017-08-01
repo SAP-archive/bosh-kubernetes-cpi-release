@@ -26,16 +26,19 @@ library
                      , CPI.Kubernetes.VmTypes
                      , CPI.Kubernetes.Secrets
                      , CPI.Kubernetes.Action.CreateVm
+                     , CPI.Kubernetes.Action.CreateDisk
                      , Resource
                      , CPI.Kubernetes.Resource.Servant
                      , CPI.Kubernetes.Resource.Pod
                      , CPI.Kubernetes.Resource.Secret
                      , CPI.Kubernetes.Resource.Service
+                     , CPI.Kubernetes.Resource.PersistentVolumeClaim
                      , CPI.Kubernetes.Resource.Metadata
                      , CPI.Kubernetes.Resource.Stub.State
                      , CPI.Kubernetes.Resource.Stub.Pod
                      , CPI.Kubernetes.Resource.Stub.Secret
                      , CPI.Kubernetes.Resource.Stub.Service
+                     , CPI.Kubernetes.Resource.Stub.PersistentVolumeClaim
   build-depends:       base >= 4.7 && < 5
                      , bosh-cpi-haskell
                      , mtl
@@ -63,6 +66,7 @@ library
                      , lens
                      , logging-effect
                      , wl-pprint-text
+                     , random
   default-language:    Haskell2010
 
 executable bosh-kubernetes-cpi
@@ -84,6 +88,7 @@ test-suite unit
                      , CPI.Kubernetes.VmTypesSpec
                      , CPI.Kubernetes.ConfigSpec
                      , CPI.Kubernetes.Action.CreateVmSpec
+                     , CPI.Kubernetes.Action.CreateDiskSpec
   build-depends:       base
                      , hspec
                      , QuickCheck
@@ -114,11 +119,14 @@ test-suite stub
   other-modules:       PodSpec
                      , SecretSpec
                      , ServiceSpec
+                     , PersistentVolumeClaimSpec
+                     , StubRunner
   build-depends:       base
                      , hspec
                      , http-types
                      , aeson-qq
                      , lens-aeson
+                     , yaml
                      , raw-strings-qq
                      , safe-exceptions
                      , bosh-cpi-haskell
@@ -129,6 +137,7 @@ test-suite stub
                      , lens
                      , text
                      , mtl
+                     , transformers
                      , unordered-containers
                      , tls
                      , haskell-kubernetes

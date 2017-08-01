@@ -8,8 +8,11 @@
 
 module PodSpec(spec) where
 
+import           Debug.Trace
+
 import           Prelude                                hiding (readFile)
 
+import           StubRunner
 import           Test.Hspec
 
 import           Control.Lens
@@ -78,7 +81,7 @@ spec =
     let pod = newPod "test" container
         container = newContainer "busybox" "busybox"
     it "creates a pod with the given name" $ do
-      void $ run $ do
+      void $ run emptyStubConfig emptyKube $ do
         bracket
           (do
             createdPod <- createPod "default" pod
@@ -95,7 +98,7 @@ spec =
             )
 
     it "creates a pod with default service account" $ do
-      void $ run $ do
+      void $ run emptyStubConfig emptyKube $ do
         bracket
           (do
             createdPod <- createPod "default" pod
@@ -112,7 +115,7 @@ spec =
             )
 
     it "creates a pod in state 'Pending'" $ do
-      void $ run $ do
+      void $ run emptyStubConfig emptyKube $ do
         bracket
           (do
             createdPod <- createPod "default" pod
@@ -125,7 +128,12 @@ spec =
             )
 
     it "creates a pod that will end up in state 'Running'" $ do
-      void $ run $ do
+      void $ run
+              emptyStubConfig
+              emptyKube {
+                  images = HashSet.singleton "busybox"
+                , secrets = HashMap.singleton ("default", "default-token") (newSecret "default-token")
+              } $ do
         bracket
           (do
             _ <- createPod "default" pod
@@ -145,7 +153,12 @@ spec =
                             & SecretVolumeSource.secretName .~ (Just $ secret ^. Metadata.name))
           secret = newSecret "test-secret"
       it "creates a pod that will end up in state 'Running'" $ do
-        void $ run $ do
+        void $ run
+                emptyStubConfig
+                emptyKube {
+                    images = HashSet.singleton "busybox"
+                  , secrets = HashMap.singleton ("default", "default-token") (newSecret "default-token")
+                } $ do
           bracket
             (do
               _ <- createSecret "default" secret
@@ -164,7 +177,7 @@ spec =
 
     context "when a pod with the given name already exists" $
       it "throws ServantError reason 409 CONFLICT" $ do
-        void $ run $
+        void $ run emptyStubConfig emptyKube $
           bracket
             (createPod "default" pod)
             (\_ -> do
@@ -179,7 +192,7 @@ spec =
             settingsVolume =  mkVolume "secret-volume"
                               & Volume.secret .~ (Just $ mkSecretVolumeSource
                               & SecretVolumeSource.secretName .~ (Just "does-not-exist"))
-        void $ run $ do
+        void $ run emptyStubConfig emptyKube $ do
           bracket
             (do
               _ <- createPod "default" pod'
@@ -213,42 +226,3 @@ hasServiceAccount name pod = let
   serviceAccountName = pod ^. Pod.spec._Just.PodSpec.serviceAccountName._Just
   in
     name == serviceAccountName
-
-type MR a = (forall m . (MonadPod (m IO), MonadSecret (m IO), MonadTrans m, MonadMask (m IO), MonadThrow (m IO)) => (m IO) a)
-
-run :: MR a -> IO a
-run f = do
-  cluster <- read . fromMaybe "False" <$> lookupEnv "KUBE_CLUSTER"
-  if cluster then
-          config `runResource` f
-        else do
-          (result, _, _::NoOutput) <- runStubT
-                                        emptyStubConfig
-                                        emptyKube {
-                                            images = HashSet.singleton "busybox"
-                                          , secrets = HashMap.singleton ("default", "default-token") (newSecret "default-token")
-                                        } f
-          pure result
-
-config :: Config
-config = Config {
-    clusterAccess = access
-  , agent = undefined
-}
-
-access :: ClusterAccess
-access = ClusterAccess {
-    server = parseBaseUrl "https://192.168.99.100:8443"
-  , namespace = pure "default"
-  , credentials = ClientCertificate <$> readCredential "/Users/d043856/.minikube/apiserver.crt" "/Users/d043856/.minikube/apiserver.key"
-}
-
-
-readCredential :: (MonadThrow m, MonadFileSystem m) => Text -> Text -> m Credential
-readCredential certPath keyPath = do
-  cert <- readFile certPath
-  key <- readFile keyPath
-  either
-    (throwM . Base.ConfigParseException)
-    pure
-    (credentialLoadX509FromMemory cert key)

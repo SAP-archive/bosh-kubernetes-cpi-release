@@ -45,6 +45,9 @@ import           GHC.Generics
 import qualified Servant.Common.BaseUrl                    as Url
 import qualified Servant.Common.Req
 
+import qualified CPI.Kubernetes.Action.CreateVm            as CreateVm
+import           Resource
+
 import qualified Kubernetes.Api.ApivApi                    as Kube
 import qualified Kubernetes.Model.Unversioned.Status       as Status
 import qualified Kubernetes.Model.V1.Any                   as Any
@@ -91,82 +94,9 @@ instance Base.MonadCpi Config IO where
     -> Base.Cpi Config IO Base.VmId
   createVm agentId stemcell cloudProperties networkSpec diskLocality env = do
     logDebug $ "Create VM for agent '" <> Unwrapped agentId <> "'"
-    let labels = HashMap.empty
-                      & HashMap.insert "agentId" (toJSON agentId)
     config <- ask
-    secret <- let
-      settings :: Object
-      settings = agent config
-                 & HashMap.insert "agent_id" (toJSON agentId)
-                --  TODO no need to fix, will be deleted soon
-                --  & HashMap.insert "networks" (toJSON (networkSpec & _Unwrapped.each._Unwrapped._Object.preconfigured .~ Bool True))
-                 & HashMap.insert "env" (toJSON env)
-                 & HashMap.insert "disks" (Object $ HashMap.singleton "system" (String "/dev/sda")
-                                                  & HashMap.insert "persistent" (Object HashMap.empty))
-                 & HashMap.insert "vm" (Object $ HashMap.singleton "name" (String "vm-name"))
-      allSettings = merge settings $ agent config
-        where
-          merge :: Object -> Object -> Object
-          merge underlay overlay = underlay <> overlay
-      rawSecret = HashMap.singleton "settings.json" (Aeson.String (decodeUtf8 $ Base64.encode $ toStrict $ Aeson.encode allSettings))
-      objectMeta = ObjectMeta.mkObjectMeta
-           & ObjectMeta.generateName .~ Just "settings"
-           & ObjectMeta.labels .~ Just (Any.Any labels)
-      secret = Secret.mkSecret
-                 & Secret.metadata
-                 .~ Just objectMeta
-                 & Secret.data_
-                 .~ Just (Any.Any rawSecret)
-      in createSecret secret
-    logDebug "Secret uploaded"
-    vmType <- VmTypes.parseVmProperties cloudProperties
-    -- let
-    --   serviceSelector = HashMap.empty
-    --                     & HashMap.insert "agentId" (toJSON agentId)
-    --   services = VmTypes.createServices vmType
-    --           & each.Service.metadata._Just.ObjectMeta.labels
-    --           .~ Just (Any.Any labels)
-    --           & each.Service.spec._Just.ServiceSpec.selector
-    --           .~ Just (Any.Any serviceSelector)
-    --   in
-    --     do
-    --       logDebug $ "Create Services" <> (Text.pack.show) services
-    --       createService `mapM` services
-    pod <- let
-      securityContext = SecurityContext.mkSecurityContext
-                        & SecurityContext.privileged .~ Just True
-                        & SecurityContext.runAsUser .~ Just 0
-      container       = Model.container "bosh" stemcell
-                        & Container.command .~ Just [
-                             "/bin/bash", "-c",
-                             "cp /etc/resolv.conf /etc/resolv.conf.dup; "
-                          <> "umount /etc/resolv.conf; "
-                          <> "mv /etc/resolv.conf.dup /etc/resolv.conf; "
-                          <> "cp /etc/hosts /etc/hosts.dup; "
-                          <> "umount /etc/hosts; "
-                          <> "mv /etc/hosts.dup /etc/hosts; "
-                          <> "exec env -i /usr/sbin/runsvdir-start"]
-                        & Container.tty .~ Just True
-                        & Container.stdin .~ Just True
-                        & Container.securityContext .~ Just securityContext
-                        & Container.volumeMounts .~ Just [
-                              Model.volumeMount "settings" "/var/vcap/bosh/secrets" True
-                            , Model.volumeMount "ephemeral-disk" "/var/vcap/data" False
-                        ]
-      podSpec         = Model.podSpec container
-                        & PodSpec.volumes .~ Just [
-                            Model.secretVolume "settings" $ secretName secret
-                          , Model.emptyVolume "ephemeral-disk"]
-                        & PodSpec.restartPolicy .~ Just "Never"
-      pod             = Model.pod "bosh-vm" podSpec
-                        & (Pod.metadata . _Just . ObjectMeta.labels) .~ Just (Any.Any labels)
-      in createPod pod
-    return $ podName pod
-      where
-        podName :: Pod.Pod -> Base.VmId
-        podName pod = Base.VmId $ pod & view (Pod.metadata . _Just . ObjectMeta.name . _Just)
-        secretName :: Secret.Secret -> Text
-        secretName = view (Secret.metadata . _Just . ObjectMeta.name . _Just)
+    config `runResource` CreateVm.createVm agentId stemcell cloudProperties networkSpec diskLocality env
+
   hasVm :: Base.VmId
           -> Base.Cpi Config IO Bool
   hasVm (Base.VmId vmId) = hasPod vmId
@@ -178,20 +108,6 @@ instance Base.MonadCpi Config IO where
     case result of
       Nothing -> return ()
       Just pod -> do
-        _ <- let
-          serviceNames :: Traversal' ServiceList.ServiceList Text
-          serviceNames = ServiceList.items._Just.each.Service.metadata._Just.ObjectMeta.name._Just
-          Just agentId = pod ^? Pod.metadata._Just.ObjectMeta.labels._Just.Any.any.at "agentId"._Just._String
-          selector = "agentId" <> "=" <> agentId
-          in do
-            logDebug $ "listService selector: '" <> selector <> "'"
-            services <- listService selector
-            logDebug $ "listService result: " <> (Text.pack . show) services
-            secretList <- listSecret selector
-            logDebug $ "listSecret result: " <> (Text.pack . show) secretList
-            let names = services ^.. serviceNames
-            logDebug $ "Found services '" <> Text.pack (show names) <> "' using selector '" <> selector <> "'"
-            mapM deleteService names
         _ <- deletePod vmId
         return ()
 
@@ -236,8 +152,8 @@ instance Base.MonadCpi Config IO where
       (Nothing, _) -> throwM $ Base.CloudError ("Pod '" <> vmId <> "' does not exist")
       (_, Nothing) -> throwM $ Base.CloudError ("Disk '" <> diskId <> "' does not exist")
       (Just pod, Just disk) -> let
-        Just agentId = pod ^? Pod.metadata._Just.ObjectMeta.labels._Just.Any.any.at "agentId"._Just._String
-        selector = "agentId" <> "=" <> agentId
+        Just agentId = pod ^? Pod.metadata._Just.ObjectMeta.labels._Just.Any.any.at "bosh.cloudfoundry.org/agent-id"._Just._String
+        selector = "bosh.cloudfoundry.org/agent-id" <> "=" <> agentId
         in do
           logDebug $ "listSecret selector: '" <> selector <> "'"
           secretList <- listSecret selector
@@ -245,14 +161,14 @@ instance Base.MonadCpi Config IO where
           serviceList <- listService selector
           logDebug $ "listService result: " <> (Text.pack . show) serviceList
           let secret = head $ SecretList._items secretList
-              rawSettings = secret ^. Secret.data_._Just.Any.any.at "settings.json".non ""._String
+              rawSettings = secret ^. Secret.data_._Just.Any.any.at "config.json".non ""._String
 
           settings <- Secrets.withBase64 (\raw -> do
                 agentSettings <- Base.parseSettings raw
                 pure $ toStrict $ Aeson.encode $ Base.addPersistentDisk agentSettings diskId ("/var/vcap/bosh/disks/" <> diskId)
               ) rawSettings
           deletePod $ pod ^. Pod.metadata._Just.ObjectMeta.name._Just
-          let newSecret = secret & Secret.data_._Just.Any.any .~ HashMap.singleton "settings.json" (String settings)
+          let newSecret = secret & Secret.data_._Just.Any.any .~ HashMap.singleton "config.json" (String settings)
           updateSecret newSecret
           let newPod = Model.cpPod pod
                            & Pod.spec._Just.PodSpec.volumes.element 0 %~ (\volume -> volume |> Model.persistentVolume "persistent-disk" diskId)
@@ -272,22 +188,22 @@ instance Base.MonadCpi Config IO where
       (Nothing, _) -> throwM $ Base.CloudError ("Pod '" <> vmId <> "' does not exist")
       (_, Nothing) -> throwM $ Base.CloudError ("Disk '" <> diskId <> "' does not exist")
       (Just pod, Just disk) -> let
-        Just agentId = pod ^? Pod.metadata._Just.ObjectMeta.labels._Just.Any.any.at "agentId"._Just._String
-        selector = "agentId" <> "=" <> agentId
+        Just agentId = pod ^? Pod.metadata._Just.ObjectMeta.labels._Just.Any.any.at "bosh.cloudfoundry.org/agent-id"._Just._String
+        selector = "bosh.cloudfoundry.org/agent-id" <> "=" <> agentId
         removeFirst []     = []
         removeFirst (x:xs) = xs
         in do
           secretList <- listSecret selector
           serviceList <- listService selector
           let secret = head $ SecretList._items secretList
-              rawSettings = secret ^. Secret.data_._Just.Any.any.at "settings.json".non ""._String
+              rawSettings = secret ^. Secret.data_._Just.Any.any.at "config.json".non ""._String
 
           settings <- Secrets.withBase64 (\raw -> do
                 agentSettings <- Base.parseSettings raw
                 pure $ toStrict $ Aeson.encode $ Base.removePersistentDisk agentSettings diskId
               ) rawSettings
           deletePod $ pod ^. Pod.metadata._Just.ObjectMeta.name._Just
-          let newSecret = secret & Secret.data_._Just.Any.any .~ HashMap.singleton "settings.json" (String settings)
+          let newSecret = secret & Secret.data_._Just.Any.any .~ HashMap.singleton "config.json" (String settings)
           updateSecret newSecret
           let newPod = Model.cpPod pod
                            & Pod.spec._Just.PodSpec.volumes._Just %~ removeFirst
