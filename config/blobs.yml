@@ -1,5 +1,6 @@
 bosh_kubernetes_cpi/dependencies.source.tgz:
   size: 301955068
+  object_id: 6fb7588a-ab27-435e-64b2-587927d65141
   sha: 9557b51ff708dfbc91e8c17ce5e055b91fd5151a
 ghc/ghc-8.0.1-x86_64-apple-darwin.tar.xz:
   size: 118496652
@@ -15,6 +16,7 @@ ghc/ghc-8.0.1-x86_64-deb8-linux.tar.xz:
   sha: 4a313d073982901a1ce8477386a61e4673511006
 gmp/gmp-5.1.3.tar.xz:
   size: 1818812
+  object_id: 70a87a0d-45a8-45b2-4533-c55b4291c7cd
   sha: 12cfe0911d64fcbd85835df9ddc18c99af8f9a45
 stack/stack-1.3.2-linux-x86_64-static.tar.gz:
   size: 6047156
