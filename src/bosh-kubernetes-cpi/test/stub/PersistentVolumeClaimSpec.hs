@@ -75,7 +75,7 @@ ignoreArgument :: f -> (a -> f)
 ignoreArgument f = \_ -> f
 
 spec :: Spec
-spec =
+spec = describe "PersistentVolumeClaim" $ do
   describe "create" $ do
     let testPVC = newPersistentVolumeClaim "test-" "10Mi"
 
@@ -102,6 +102,13 @@ spec =
       void $ run emptyStubConfig emptyKube $ do
         withPersistentVolumeClaim "my-pvc" testPVC $ \(input, output) -> do
           void $ waitForPersistentVolumeClaim "default" (output ^. name) (\pvc -> pvc ^. _Just.PersistentVolumeClaim.status.PersistentVolumeClaim.phase._Just == "Bound")
+
+  describe "delete" $ do
+    context "when a PersistentVolumeClaim with the given name does not exist" $
+      it "throws ServantError reason 404 NOT FOUND" $ do
+        void $ run emptyStubConfig emptyKube $
+          deletePersistentVolumeClaim "default" "does-not-exist"
+        `shouldThrow` (servantErrorWithStatusCode 404)
 
 servantErrorWithStatusCode :: Int -> Selector ServantError
 servantErrorWithStatusCode expectedStatusCode (FailureResponse (Status code _) _ _) = expectedStatusCode == code

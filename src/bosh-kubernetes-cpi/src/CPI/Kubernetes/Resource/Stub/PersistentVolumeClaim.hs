@@ -121,8 +121,16 @@ instance (MonadIO m, MonadThrow m, Monoid w, HasPVCs s, HasWaitCount w, HasTime 
                      in
                        HashMap.insert (after 2) deleted (HashMap.insert (after 1) terminating events)
                         )
-
-    -- pods <- State.gets $ withPVCs id
-    pure undefined
+    pvcs <- State.gets asPVCs
+    case HashMap.lookup (namespace, name) pvcs of
+      Just pvc -> pure pvc
+      Nothing  -> throwM FailureResponse {
+          responseStatus = Status {
+            statusMessage = "Not Found"
+            , statusCode = 404
+          }
+        , responseContentType = "text/plain"
+        , responseBody = ""
+      }
 
   waitForPersistentVolumeClaim namespace name predicate = waitFor (WaitConfig (Retry 20) (Seconds 1)) (getPersistentVolumeClaim namespace name) predicate
