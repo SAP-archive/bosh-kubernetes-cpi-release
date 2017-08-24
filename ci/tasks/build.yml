@@ -9,5 +9,8 @@ image_resource:
 inputs:
   - name: cpi-src
 
+caches:
+  - path: stack-root
+  - path: cpi-src/src/bosh-kubernetes-cpi/.stack-work-deps
 run:
   path: cpi-src/ci/tasks/build.sh
