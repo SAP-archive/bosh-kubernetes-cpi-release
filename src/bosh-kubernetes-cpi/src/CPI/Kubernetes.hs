@@ -45,7 +45,9 @@ import           GHC.Generics
 import qualified Servant.Common.BaseUrl                    as Url
 import qualified Servant.Common.Req
 
+import qualified CPI.Kubernetes.Action.CreateDisk          as CreateDisk
 import qualified CPI.Kubernetes.Action.CreateVm            as CreateVm
+import qualified CPI.Kubernetes.Action.DeleteDisk          as DeleteDisk
 import           Resource
 
 import qualified Kubernetes.Api.ApivApi                    as Kube
@@ -115,20 +117,13 @@ instance Base.MonadCpi Config IO where
     -> Base.DiskProperties
     -> Base.VmId
     -> Base.Cpi Config IO Base.DiskId
-  createDisk size properties (Base.VmId vmId) = do
+  createDisk size properties vmId = do
     logDebug $
          "Creating disk with size '" <> Text.pack (show size)
       <> "', properties '" <> Text.pack (show properties)
-      <> "' for VM '" <> vmId <> "'"
-    let annotations = HashMap.empty
-                      & HashMap.insert "volume.beta.kubernetes.io/storage-class" (String "slow")
-        claim = Model.persistentVolumeClaim "bosh" (Text.pack (show size ++ "Mi"))
-              & PersistentVolumeClaim.metadata._Just.ObjectMeta.annotations .~ Just (Any.Any annotations)
-    persistentVolumeClaim <- createPersistentVolumeClaim claim
-    return $ diskName persistentVolumeClaim
-      where
-        diskName :: PersistentVolumeClaim.PersistentVolumeClaim -> Base.DiskId
-        diskName claim = Base.DiskId $ claim & view (PersistentVolumeClaim.metadata . _Just . ObjectMeta.name . _Just)
+      <> "' for VM '" <> (Unwrapped vmId) <> "'"
+    config <- ask
+    config `runResource` CreateDisk.createDisk size properties vmId
 
   hasDisk :: Base.DiskId
           -> Base.Cpi Config IO Bool
@@ -136,10 +131,12 @@ instance Base.MonadCpi Config IO where
 
   deleteDisk :: Base.DiskId
           -> Base.Cpi Config IO ()
-  deleteDisk (Base.DiskId diskId) = do
-    logDebug $ "Delete disk '" <> Text.pack (show diskId) <> "'"
-    exists <- hasPersistentVolumeClaim diskId
-    when exists $ void $ deletePersistentVolumeClaim diskId
+  deleteDisk diskId = do
+    logDebug $ "Delete disk '" <> Text.pack (show (Unwrapped diskId)) <> "'"
+    exists <- hasPersistentVolumeClaim (Unwrapped diskId)
+    config <- ask
+    when exists $ void $ config `runResource` DeleteDisk.deleteDisk diskId
+
 
   attachDisk :: Base.VmId
           -> Base.DiskId
