@@ -41,8 +41,8 @@ RUN    mkdir -p stack \
     && chmod +x stack/stack-*/stack \
     && mv stack/stack-*/stack /usr/local/bin/stack
 
-ARG stack_lts
-RUN stack setup --resolver $stack_lts
+# ARG stack_lts
+# RUN stack setup --resolver $stack_lts
 
 # bosh cli
 # RUN    curl -o /usr/local/bin/bosh https://s3.amazonaws.com/bosh-cli-artifacts/bosh-cli-2.0.2-linux-amd64 \
