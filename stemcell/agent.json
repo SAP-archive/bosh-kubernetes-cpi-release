@@ -1,20 +1,24 @@
 {
-    "Platform": {
-        "Linux": {
-            "UseDefaultTmpDir": true,
-            "UsePreformattedPersistentDisk": true,
-            "BindMountPersistentDisk": true,
-            "SkipDiskSetup": true
-        }
-    },
-    "Infrastructure": {
-        "Settings": {
-            "Sources": [{
-                "Type": "File",
-                "SettingsPath": "/var/vcap/bosh/secrets/settings.json"
-            }],
-
-            "UseRegistry": false
-        }
+  "Platform": {
+    "Linux": {
+      "UseDefaultTmpDir": true,
+      "UsePreformattedPersistentDisk": true,
+      "BindMountPersistentDisk": true,
+      "SkipDiskSetup": true
     }
+  },
+  "Infrastructure": {
+    "Settings": {
+      "Sources": [
+        {
+          "Type": "File",
+          "SettingsPath": "/var/vcap/bosh/warden-cpi-agent-env.json"
+        },
+        {
+          "Type": "File",
+          "SettingsPath": "/var/vcap/bosh/settings-source-file/config.json"
+        }
+      ]
+    }
+  }
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-version=3363.9
+version=3421.6
 url=https://bosh.io/d/stemcells/bosh-warden-boshlite-ubuntu-trusty-go_agent?v=${version}
 account=loewenstein
 name=bosh-stemcell-kubernetes-ubuntu-trusty-go_agent
