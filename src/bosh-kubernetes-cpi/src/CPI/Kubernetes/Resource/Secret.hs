@@ -84,7 +84,7 @@ instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem
     logDebug $ "Delete secret '" <> namespace <> "/" <> name <> "'"
     restCall $ deleteNamespacedSecret namespace name Nothing (mkDeleteOptions 0)
 
-  waitForSecret namespace name predicate = waitFor (WaitConfig (Retry 20) (Seconds 1)) (getSecret namespace name) predicate
+  waitForSecret namespace name predicate = waitFor (WaitConfig (Retry 300) (Seconds 1)) (getSecret namespace name) predicate
 
 newSecret :: Text -> Secret
 newSecret name =

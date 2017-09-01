@@ -122,7 +122,7 @@ instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem
     logDebug $ "Delete PersistentVolumeClaim '" <> namespace <> "/" <> name <> "'"
     restCall $ deleteNamespacedPersistentVolumeClaim namespace name Nothing (mkDeleteOptions 0)
 
-  waitForPersistentVolumeClaim namespace name predicate = waitFor (WaitConfig (Retry 20) (Seconds 1)) (getPersistentVolumeClaim namespace name) predicate
+  waitForPersistentVolumeClaim namespace name predicate = waitFor (WaitConfig (Retry 300) (Seconds 1)) (getPersistentVolumeClaim namespace name) predicate
 
 newPersistentVolumeClaim :: Text -> Text -> PersistentVolumeClaim
 newPersistentVolumeClaim namePrefix size =

@@ -99,7 +99,7 @@ instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem
     logDebug $ "Delete secret '" <> namespace <> "/" <> name <> "'"
     restCall $ deleteNamespacedService namespace name Nothing
 
-  waitForService namespace name predicate = waitFor (WaitConfig (Retry 20) (Seconds 1)) (getService namespace name) predicate
+  waitForService namespace name predicate = waitFor (WaitConfig (Retry 300) (Seconds 1)) (getService namespace name) predicate
 
 newService :: Text -> Service
 newService serviceName = mkService
