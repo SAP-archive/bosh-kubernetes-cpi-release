@@ -13,8 +13,10 @@ jobs:
   - aggregate:
     - get: cpi-src
       trigger: true
+      tags: ((tags))
 
   - task: build
+    tags: ((tags))
     file: cpi-src/ci/tasks/build.yml
 
 - name: create-release
@@ -23,18 +25,23 @@ jobs:
   - aggregate:
       - get: cpi-src
         trigger: true
+        tags: ((tags))
         passed:
           - build
       - get: dev-version-semver
+        tags: ((tags))
         params:
           bump: patch
 
   - task: create-release
+    tags: ((tags))
     file: cpi-src/ci/tasks/create-release.yml
   - put: dev-release
+    tags: ((tags))
     params:
       file: dev-release/bosh-kubernetes-cpi-*\.tgz
   - put: dev-version-semver
+    tags: ((tags))
     params: {file: dev-version-semver/number}
 
 - name: finalize-release
@@ -42,26 +49,32 @@ jobs:
   plan:
     - aggregate:
       - get: cpi-src
+        tags: ((tags))
         passed:
           - create-release
       - get: dev-release
+        tags: ((tags))
         passed:
           - create-release
       - get: release-version-semver
+        tags: ((tags))
         params:
           bump:
             major
 
     - task: finalize-release
+      tags: ((tags))
       file: cpi-src/ci/tasks/finalize-release.yml
       params:
-        aws_access_key_id: {{kubernetes_cpi_blobs_access_key}}
-        aws_secret_access_key: {{kubernetes_cpi_blobs_secret_key}}
+        aws_access_key_id: ((kubernetes_cpi_blobs_access_key))
+        aws_secret_access_key: ((kubernetes_cpi_blobs_secret_key))
     - put: release-version-semver
+      tags: ((tags))
       params:
         file: release-version-semver/number
 
     - put: cpi-src-out
+      tags: ((tags))
       params:
         repository: promote/repo
         rebase: true,
@@ -69,6 +82,7 @@ jobs:
         tag_prefix: "v"
 
     - put: final-release
+      tags: ((tags))
       params:
         file: final-release/bosh-kubernetes-cpi-*\.tgz
 
@@ -89,42 +103,42 @@ resources:
     source:
       uri: git@github.com:sap/bosh-kubernetes-cpi-release.git
       branch: master
-      private_key: {{github_deployment_key}}
+      private_key: ((github_deployment_key))
 
   - name: dev-version-semver
     type: semver
     source:
       key:                current-dev-version
       initial_version: 0.0.0
-      bucket:             {{pipeline_bucket_name}}
+      bucket:             ((pipeline_bucket_name))
       region_name: eu-central-1
-      access_key_id:      {{pipeline_bucket_access_key}}
-      secret_access_key:  {{pipeline_bucket_secret_key}}
+      access_key_id:      ((pipeline_bucket_access_key))
+      secret_access_key:  ((pipeline_bucket_secret_key))
 
   - name: dev-release
     type: s3
     source:
       regexp: main/dev-releases/bosh-kubernetes-cpi-([0-9.]+)\.tgz
-      bucket: {{pipeline_bucket_name}}
+      bucket: ((pipeline_bucket_name))
       region_name: eu-central-1
-      access_key_id:      {{pipeline_bucket_access_key}}
-      secret_access_key:  {{pipeline_bucket_secret_key}}
+      access_key_id:      ((pipeline_bucket_access_key))
+      secret_access_key:  ((pipeline_bucket_secret_key))
 
   - name: final-release
     type: s3
     source:
       regexp: main/final-releases/bosh-kubernetes-cpi-([0-9.]+(-alpha)?)\.tgz
-      bucket: {{pipeline_bucket_name}}
+      bucket: ((pipeline_bucket_name))
       region_name: eu-central-1
-      access_key_id:      {{pipeline_bucket_access_key}}
-      secret_access_key:  {{pipeline_bucket_secret_key}}
+      access_key_id:      ((pipeline_bucket_access_key))
+      secret_access_key:  ((pipeline_bucket_secret_key))
 
   - name: release-version-semver
     type: semver
     source:
       key:                current-release-version
       initial_version: 4.0.0
-      bucket:             {{pipeline_bucket_name}}
+      bucket:             ((pipeline_bucket_name))
       region_name: eu-central-1
-      access_key_id:      {{pipeline_bucket_access_key}}
-      secret_access_key:  {{pipeline_bucket_secret_key}}
+      access_key_id:      ((pipeline_bucket_access_key))
+      secret_access_key:  ((pipeline_bucket_secret_key))
