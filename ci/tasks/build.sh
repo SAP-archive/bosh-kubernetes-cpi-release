@@ -6,8 +6,17 @@ set -e
 export STACK_ROOT=$PWD/stack-root
 
 pushd cpi-src/src/bosh-kubernetes-cpi
+  echo "stack setup..."
   stack setup
-  stack build --work-dir=.stack-work-deps --only-dependencies
+
+  echo
+  echo "stack build dependencies..."
+  stack build \
+    --work-dir=.stack-work-deps \
+    --only-dependencies
   cp -R .stack-work-deps .stack-work
+
+  echo
+  echo "stack build & test"
   stack build --test
 popd
