@@ -83,12 +83,12 @@ createDisk ::
 createDisk size cloudProperties (Base.VmId vmId) = do
   logDebug $ "Create Disk for agent '" <> vmId <> "'"
   config <- asks asConfig
-  namespace <- config & clusterAccess & namespace
-  let pvSize s = (Text.pack.show) s <> "Mi"
-  pvc <- createPersistentVolumeClaim namespace $
+  let ns = config & clusterAccess & namespace
+      pvSize s = (Text.pack.show) s <> "Mi"
+  pvc <- createPersistentVolumeClaim ns $
             newPersistentVolumeClaim "bosh-disk-" (pvSize size)
   boundPVC <- waitForPersistentVolumeClaim
-                namespace
+                ns
                 (pvc ^. Metadata.name)
                 (\pvc -> pvc ^. _Just.status.phase._Just == "Bound")
   pure $ Base.DiskId $ pvc ^. Metadata.name

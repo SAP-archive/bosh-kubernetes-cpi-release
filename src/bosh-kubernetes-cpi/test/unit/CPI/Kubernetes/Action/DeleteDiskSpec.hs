@@ -93,7 +93,7 @@ spec = describe "deleteDisk" $ do
       config = TestConfig {
                  config = Config {
                    clusterAccess = ClusterAccess {
-                     namespace = pure "bosh"
+                     namespace = "bosh"
                    }
                    , agent = ?agent
                  }

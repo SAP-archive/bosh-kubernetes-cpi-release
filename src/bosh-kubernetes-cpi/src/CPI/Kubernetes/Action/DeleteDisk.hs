@@ -86,10 +86,10 @@ deleteDisk ::
 deleteDisk diskId = do
   logDebug $ "Delete disk '" <> Unwrapped diskId <> "'"
   config <- asks asConfig
-  namespace <- config & clusterAccess & namespace
-  pvc <- ignoringNotFound $ deletePersistentVolumeClaim namespace (Unwrapped diskId)
+  let ns = config & clusterAccess & namespace
+  pvc <- ignoringNotFound $ deletePersistentVolumeClaim ns (Unwrapped diskId)
   waitForPersistentVolumeClaim
-    namespace
+    ns
     (pvc ^. _Just.Metadata.name)
     isNothing
   pure ()

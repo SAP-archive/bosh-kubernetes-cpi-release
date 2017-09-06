@@ -53,7 +53,7 @@ loadConfig = runMaybeT $ do
   cluster <- MaybeT $ lookupEnv "KUBE_CLUSTER"
   accessFile <- liftIO $ ByteString.readFile $ cluster
   rawAccess <- either throwM pure $ decodeEither' accessFile
-  access <- parseClusterAccess rawAccess
+  access <- liftIO $ parseClusterAccess rawAccess
   pure Config {
     clusterAccess = access
   }

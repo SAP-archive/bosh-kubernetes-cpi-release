@@ -108,9 +108,9 @@ namespacedF :: (MonadIO m, MonadThrow m, MonadReader Config m, MonadLog (WithSev
 namespacedF f = do
   config <- ask
   let cluster = clusterAccess config
-  baseUrl <- server cluster
+      baseUrl = server cluster
+      kubeNamespace = namespace cluster
   creds <- credentials cluster
-  kubeNamespace <- namespace cluster
   manager <- liftIO $ newManager $ createManagerSettings baseUrl creds
   result <- liftIO $ runExceptT $ f kubeNamespace manager baseUrl
   either throwM return result

@@ -86,7 +86,7 @@ spec = describe "createVm" $ do
       access = TestConfig {
                  config = Config {
                    clusterAccess = ClusterAccess {
-                     namespace = pure "bosh"
+                     namespace = "bosh"
                    }
                    , agent = ?agent
                  }

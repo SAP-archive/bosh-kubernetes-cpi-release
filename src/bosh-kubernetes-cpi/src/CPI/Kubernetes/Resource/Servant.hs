@@ -84,7 +84,7 @@ restCall :: (MonadIO m, MonadThrow m, HasConfig c, MonadReader c m, MonadLog (Wi
          -> m model
 restCall f = do
   cluster <- asks asConfig
-  baseUrl <- cluster & clusterAccess & server
+  let baseUrl = cluster & clusterAccess & server
   creds <- cluster & clusterAccess & credentials
   manager <- liftIO $ newManager $ createManagerSettings baseUrl creds
   result <- liftIO $ runExceptT $ f manager baseUrl

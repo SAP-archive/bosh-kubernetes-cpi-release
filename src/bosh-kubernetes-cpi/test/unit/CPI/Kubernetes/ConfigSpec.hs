@@ -12,19 +12,22 @@ import           Test.Hspec
 import           Text.RawString.QQ
 
 import           Data.Aeson
-import           Data.ByteString.Lazy          (fromStrict, toStrict)
+import           Data.ByteString.Lazy           (fromStrict, toStrict)
 
 
 import           Control.Exception.Safe
 import           Control.Monad.State
+import           Control.Monad.Stub.Environment
 import           Control.Monad.Stub.FileSystem
 import           Control.Monad.Stub.StubMonad
-import           Data.ByteString               (ByteString)
-import           Data.HashMap.Strict           (HashMap, (!))
-import qualified Data.HashMap.Strict           as HashMap
-import           Data.Text                     (Text)
-import qualified Servant.Common.BaseUrl        as Url
+import           Data.ByteString                (ByteString)
+import           Data.HashMap.Strict            (HashMap, (!))
+import qualified Data.HashMap.Strict            as HashMap
+import           Data.Text                      (Text)
+import qualified Servant.Common.BaseUrl         as Url
 
+runStubT' :: () -> SystemState -> StubT () SystemState () IO () -> IO ((), SystemState, ())
+runStubT' = runStubT
 
 spec :: Spec
 spec =
@@ -45,11 +48,11 @@ spec =
       let ?creds = [aesonQQ|{"token": "xxxxx-xxxxx-xxxxx-xxxxx"}|]
       it "should parse namespace" $ do
         config <- parseConfig rawConfig
-        namespace' <- namespace $ clusterAccess config
+        let namespace' = namespace $ clusterAccess config
         namespace' `shouldBe` "default"
       it "should parse server" $ do
         config <- parseConfig rawConfig
-        server' <- server $ clusterAccess config
+        let server' = server $ clusterAccess config
         expectedServer <- Url.parseBaseUrl "https://my.kubernetes.io:4443"
         server' `shouldBe` expectedServer
       context "with valid client certs" $ do
@@ -73,34 +76,51 @@ spec =
     context "given access of type ServiceAccount" $ do
       let rawConfig = toStrict $ encode [aesonQQ|
         {
-          "access": "ServiceAccount",
+          "access": {
+            "server" : "https://my.kube.cluster",
+            "namespace" : "my-namespace",
+            "credentials" : "ServiceAccount"
+          },
           "agent": {}
         }
       |]
-      let fileSystem = SystemState $ HashMap.fromList [
+      let systemState = emptySystemState {
+          fileSystem = HashMap.fromList [
               ("/var/run/secrets/kubernetes.io/serviceaccount/namespace", "default")
             , ("/var/run/secrets/kubernetes.io/serviceaccount/token", "xxxxx-xxxxx-xxxxx-xxxxx")]
-      it "should read namespace from service account" $ do
-        config <- parseConfig rawConfig
-        namespace' <- runStubTResult () fileSystem (namespace $ clusterAccess config :: Stub Text)
-        namespace' `shouldBe` "default"
-      it "should use 'https://kubernetes' as server url" $ do
-        config <- parseConfig rawConfig
-        server' <- server $ clusterAccess config
-        expectedServer <- Url.parseBaseUrl "https://kubernetes"
-        server' `shouldBe` expectedServer
+        , environment = HashMap.singleton "KUBERNETES_SERVICE_HOST" "https://kubernetes.api"
+      }
+      it "should read namespace from configuration" $ do
+        void $ runStubT' () systemState $ do
+          config <- parseConfig rawConfig
+          let namespace' = namespace $ clusterAccess config
+          lift $ namespace' `shouldBe` "my-namespace"
+      it "should use read server url from configuration" $ do
+        void $ runStubT' () systemState $ do
+          config <- parseConfig rawConfig
+          let server' = server $ clusterAccess config
+          expectedServer <- Url.parseBaseUrl "https://my.kube.cluster"
+          lift $ server' `shouldBe` expectedServer
       it "should read token from service account" $ do
-        config <- parseConfig rawConfig
-        Token credentials <- runStubTResult () fileSystem (credentials $ clusterAccess config :: Stub Credentials)
-        credentials `shouldBe` "xxxxx-xxxxx-xxxxx-xxxxx"
-
-type Stub a = StubT () SystemState () IO a
+        void $ runStubT' () systemState $ do
+          config <- parseConfig rawConfig
+          Token credentials <- credentials $ clusterAccess config
+          lift $ credentials `shouldBe` "xxxxx-xxxxx-xxxxx-xxxxx"
 
 instance HasFiles SystemState where
   asFiles = fileSystem
 
+instance HasEnvironment SystemState where
+  asEnvironment = environment
+
 data SystemState = SystemState {
-  fileSystem :: HashMap Text ByteString
+    fileSystem  :: HashMap Text ByteString
+  , environment :: HashMap Text Text
+}
+
+emptySystemState = SystemState {
+    fileSystem = HashMap.empty
+  , environment = HashMap.empty
 }
 
 privateKey :: Text

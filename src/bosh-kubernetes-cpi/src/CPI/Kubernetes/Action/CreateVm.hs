@@ -99,7 +99,7 @@ createVm agentId stemcell cloudProperties networks diskLocality env = do
   let labels = HashMap.empty
                     & HashMap.insert "bosh.cloudfoundry.org/agent-id" (toJSON agentId)
   config <- asks asConfig
-  namespace <- config & clusterAccess & namespace
+  let ns = config & clusterAccess & namespace
   secret <- let
     secret = newSecret ("agent-settings-" <> Unwrapped agentId)
              & Metadata.labels .~ labels
@@ -109,7 +109,7 @@ createVm agentId stemcell cloudProperties networks diskLocality env = do
     blobstore = agent config ^? at "blobstore"._Just._JSON
     ntp = agent config ^. at "ntp"._Just._JSON
     mbus = agent config ^. at "mbus"._Just._String
-    in createSecret namespace secret
+    in createSecret ns secret
   pod <- let
     securityContext = mkSecurityContext
                       & SecurityContext.privileged ?~ True
@@ -143,11 +143,11 @@ createVm agentId stemcell cloudProperties networks diskLocality env = do
                       & Pod.container.Container.securityContext .~ Just securityContext
                       & Pod.volumes %~ (settingsVolume <|)
                       & Pod.volumes %~ (ephemeralVolume <|)
-    in createPod namespace pod
+    in createPod ns pod
   vmType <- VmTypes.parseVmProperties cloudProperties
   let services = vmType ^. VmTypes.services
   services `forM_` (`assignTo` agentId)
-  _ <- waitForPod namespace (Unwrapped agentId) (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
+  _ <- waitForPod ns (Unwrapped agentId) (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
   pure $ Base.VmId $ pod ^. name
 
 assignTo ::
@@ -158,13 +158,13 @@ assignTo ::
    , MonadService m) => VmTypes.Service -> Base.AgentId -> m (Maybe Service)
 service `assignTo` agentId = do
   config <- asks asConfig
-  namespace <- config & clusterAccess & namespace
-  s <- getService namespace $ service ^. VmTypes.serviceName
+  let ns = config & clusterAccess & namespace
+  s <- getService ns $ service ^. VmTypes.serviceName
   case s of
     Just s' ->
       let s'' = s'
              & label "bosh.cloudfoundry.org/agent-id" .~ (Unwrapped agentId)
              & Service.podSelector.at "bosh.cloudfoundry.org/agent-id".non ""._String .~ (Unwrapped agentId)
       in
-        Just <$> updateService namespace s''
+        Just <$> updateService ns s''
     Nothing -> throwM $ Base.CloudError $ "Service '" <> service ^. VmTypes.serviceName <> "' could not be found."
