@@ -1,0 +1,69 @@
+---
+groups:
+- name: bosh-kubernetes-cpi-stemcells
+  jobs:
+  - create-ubuntu-stemcell
+
+jobs:
+- name: create-ubuntu-stemcell
+  serial: true
+  plan:
+  - aggregate:
+    - get: cpi-src
+      tags: ((tags))
+    - get: warden-ubuntu-stemcell
+      trigger: true
+      tags: ((tags))
+
+  - task: build
+    tags: ((tags))
+    file: cpi-src/ci/pipelines/kubernetes-stemcells/tasks/build.yml
+    input_mapping:
+      warden-stemcell: warden-ubuntu-stemcell
+    params:
+      STEMCELL_OS: ubuntu-trusty
+
+  - put: kubernetes-ubuntu-stemcell-image
+    tags: ((tags))
+    params:
+      build: build/docker
+      tag: build/version
+  
+  - put: kubernetes-ubuntu-stemcell
+    tags: ((tags))
+    params:
+      file: build/bosh-stemcell-*-kubernetes-ubuntu-trusty-go_agent.tgz
+
+resources:
+  - name: cpi-src
+    type: git
+    source:
+      uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
+      branch: stemcell-pipeline
+      ignore_paths:
+        - releases/bosh-kubernetes-cpi/**
+        - .final_builds/**
+        - docs/**
+        - README.md
+
+  - name: warden-ubuntu-stemcell
+    type: bosh-io-stemcell
+    source:
+      name: bosh-warden-boshlite-ubuntu-trusty-go_agent
+      force_regular: true
+
+  - name: kubernetes-ubuntu-stemcell-image
+    type: docker-image
+    source:
+      repository: loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent
+      username: ((docker_username))
+      password: ((docker_password))
+
+  - name: kubernetes-ubuntu-stemcell
+    type: s3
+    source:
+      regexp: bosh-stemcell-([0-9.]+)-kubernetes-ubuntu-trusty-go_agent\.tgz 
+      bucket: bosh-kubernetes-cpi-stemcells
+      region_name: eu-central-1
+      access_key_id:      ((stemcell_bucket_access_key))
+      secret_access_key:  ((stemcell_bucket_secret_key))

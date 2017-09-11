@@ -1,0 +1,20 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: loewenstein/ci-base
+
+inputs:
+  - name: cpi-src
+  - name: warden-stemcell
+
+outputs:
+  - name: build
+
+run:
+  path: cpi-src/ci/pipelines/kubernetes-stemcells/tasks/build.sh
+
+params:
+  - STEMCELL_OS: ""
