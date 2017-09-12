@@ -1,0 +1,28 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: loewenstein/ci-bosh
+
+inputs:
+  - name: cpi-src
+  - name: prepare-namespace
+  - name: bosh-deployment-src
+  - name: dev-release
+  - name: bosh-release
+  - name: kubernetes-stemcell
+
+outputs:
+  - name: create-env
+
+run:
+  path: cpi-src/ci/tasks/create-env.sh
+params:
+  - SERVICE_ACCOUNT_KEY: ""
+  - PROJECT: ""
+  - ZONE: ""
+  - CLUSTER: ""
+  - BOSH_PRIVATE_KEY: ""
+  - STEMCELL_OS: ""

@@ -1,0 +1,24 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: loewenstein/ci-bosh
+
+inputs:
+  - name: cpi-src
+  - name: prepare-namespace
+  - name: bosh-deployment-src
+  - name: dev-release
+  - name: bosh
+  - name: kubernetes-stemcell
+  - name: create-env
+  - name: bats
+
+outputs:
+  - name: run-bats
+
+run:
+  path: cpi-src/ci/tasks/run-bats.sh
+params: []

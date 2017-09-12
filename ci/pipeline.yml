@@ -4,6 +4,7 @@ groups:
   jobs:
   - build
   - create-release
+  - bats-ubuntu
   - finalize-release
 
 jobs:
@@ -44,7 +45,7 @@ jobs:
     tags: ((tags))
     params: {file: dev-version-semver/number}
 
-- name: finalize-release
+- name: bats-ubuntu
   serial: true
   plan:
     - aggregate:
@@ -54,8 +55,61 @@ jobs:
           - create-release
       - get: dev-release
         tags: ((tags))
+        trigger: true
         passed:
           - create-release
+      - get: bosh-release
+        tags: ((tags))
+      - get: kubernetes-ubuntu-stemcell
+        tags: ((tags))
+      - get: bosh-deployment-src
+        tags: ((tags))
+      - get: bats
+        tags: ((tags))
+
+    - task: prepare-namespace
+      tags: ((tags))
+      file: cpi-src/ci/tasks/prepare-namespace.yml
+      params:
+        SERVICE_ACCOUNT_KEY: ((service_account_key))
+        PROJECT: ((project))
+        ZONE: ((zone))
+        CLUSTER: ((cluster))
+    
+    - task: create-env
+      tags: ((tags))
+      file: cpi-src/ci/tasks/create-env.yml
+      input_mapping:
+        kubernetes-stemcell: kubernetes-ubuntu-stemcell
+      params:
+        SERVICE_ACCOUNT_KEY: ((service_account_key))
+        PROJECT: ((project))
+        ZONE: ((zone))
+        CLUSTER: ((cluster))
+        BOSH_PRIVATE_KEY: ((bosh_private_key))
+        STEMCELL_OS: ubuntu-trusty
+
+    - task: delete-namespace
+      tags: ((tags))
+      file: cpi-src/ci/tasks/delete-namespace.yml
+      params:
+        SERVICE_ACCOUNT_KEY: ((service_account_key))
+        PROJECT: ((project))
+        ZONE: ((zone))
+        CLUSTER: ((cluster))
+
+- name: finalize-release
+  serial: true
+  plan:
+    - aggregate:
+      - get: cpi-src
+        tags: ((tags))
+        passed:
+          - bats-ubuntu
+      - get: dev-release
+        tags: ((tags))
+        passed:
+          - bats-ubuntu
       - get: release-version-semver
         tags: ((tags))
         params:
@@ -91,10 +145,19 @@ resources:
     type: git
     source:
       uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
-      branch: master
+      branch: ci-bats
       ignore_paths:
         - releases/bosh-kubernetes-cpi/**
         - .final_builds/**
+        - docs/**
+        - README.md
+
+  - name: bosh-deployment-src
+    type: git
+    source:
+      uri: https://github.com/loewenstein/bosh-deployment.git
+      branch: ci-bats
+      ignore_paths:
         - docs/**
         - README.md
 
@@ -104,6 +167,26 @@ resources:
       uri: git@github.com:sap/bosh-kubernetes-cpi-release.git
       branch: master
       private_key: ((github_deployment_key))
+
+  - name: bats
+    type: git
+    tags: ((tags))
+    source:
+      uri: https://github.com/loewenstein/bosh-acceptance-tests.git
+      branch: ci-bats
+
+  - name: bosh-release
+    type: bosh-io-release
+    tags: ((tags))
+    source:
+      repository: cloudfoundry/bosh
+
+  - name: kubernetes-ubuntu-stemcell
+    type: s3
+    source:
+      regexp: bosh-stemcell-([0-9.]+)-kubernetes-ubuntu-trusty-go_agent\.tgz 
+      bucket: bosh-kubernetes-cpi-stemcells
+      region_name: eu-central-1
 
   - name: dev-version-semver
     type: semver

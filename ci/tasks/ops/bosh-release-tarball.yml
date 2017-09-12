@@ -1,0 +1,9 @@
+- type: replace
+  path: /releases/name=bosh/url?
+  value: file://((bosh_release_tarball))
+
+- type: remove
+  path: /releases/name=bosh/sha1?
+
+- type: remove
+  path: /releases/name=bosh/version?
