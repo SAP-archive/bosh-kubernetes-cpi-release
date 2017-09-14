@@ -39,7 +39,7 @@ resources:
     type: git
     source:
       uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
-      branch: stemcell-pipeline
+      branch: master
       ignore_paths:
         - releases/bosh-kubernetes-cpi/**
         - .final_builds/**

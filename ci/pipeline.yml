@@ -145,7 +145,7 @@ resources:
     type: git
     source:
       uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
-      branch: ci-bats
+      branch: master
       ignore_paths:
         - releases/bosh-kubernetes-cpi/**
         - .final_builds/**
