@@ -12,6 +12,8 @@ pushd cpi-src/src/bosh-kubernetes-cpi
   echo
   echo "stack build dependencies..."
   stack build \
+    --fast \
+    --force-dirty \
     --work-dir=.stack-work-deps \
     --only-dependencies
   cp -R .stack-work-deps .stack-work
