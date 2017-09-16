@@ -22,7 +22,8 @@ import           Kubernetes.Model.V1.ObjectMeta      (ObjectMeta)
 import qualified Kubernetes.Model.V1.ObjectMeta      as ObjectMeta
 import           Kubernetes.Model.V1.Service         (Service)
 import qualified Kubernetes.Model.V1.Service         as Service
-import           Kubernetes.Model.V1.ServiceList     (ServiceList)
+import           Kubernetes.Model.V1.ServiceList     (ServiceList,
+                                                      mkServiceList)
 import qualified Kubernetes.Model.V1.ServiceList     as ServiceList
 
 import           Kubernetes.Api.ApivApi              (createNamespacedPod,
@@ -66,9 +67,14 @@ instance (MonadThrow m, MonadWait m, Monoid w, HasServices s, HasWaitCount w, Ha
     State.modify $ updateServices services'
     pure service
 
-  listService namespace = do
-    kube <- State.get
-    pure undefined
+  listService namespace maybeSelector = do
+    services <- State.gets asServices
+    let bySelector = case maybeSelector of
+          Just selector -> let [key, value] = Text.splitOn "=" selector
+                             in
+                               (\s -> (s ^. label key) == value)
+          Nothing -> const True
+    pure $ mkServiceList $ filter bySelector $ HashMap.elems services
 
   getService namespace name = do
     services <- State.gets asServices
@@ -99,4 +105,4 @@ instance (MonadThrow m, MonadWait m, Monoid w, HasServices s, HasWaitCount w, Ha
                        )
     pure undefined
 
-  waitForService namespace name predicate = waitFor (WaitConfig (Retry 20) (Seconds 1)) (getService namespace name) predicate
+  waitForService message namespace name predicate = waitFor (WaitConfig (Retry 20) (Seconds 1) message) (getService namespace name) predicate

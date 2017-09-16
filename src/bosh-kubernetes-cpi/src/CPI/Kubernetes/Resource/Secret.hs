@@ -60,7 +60,7 @@ class (Monad m) => MonadSecret m where
   getSecret :: Text -> Text -> m (Maybe Secret)
   updateSecret :: Text -> Secret -> m Secret
   deleteSecret :: Text -> Text -> m Status
-  waitForSecret :: Text -> Text -> (Maybe Secret -> Bool) -> m (Maybe Secret)
+  waitForSecret :: Text -> Text -> Text -> (Maybe Secret -> Bool) -> m (Maybe Secret)
 
 instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem m, MonadWait m, HasConfig c) => MonadSecret (Resource c m) where
 
@@ -84,7 +84,7 @@ instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem
     logDebug $ "Delete secret '" <> namespace <> "/" <> name <> "'"
     restCall $ deleteNamespacedSecret namespace name Nothing (mkDeleteOptions 0)
 
-  waitForSecret namespace name predicate = waitFor (WaitConfig (Retry 300) (Seconds 1)) (getSecret namespace name) predicate
+  waitForSecret message namespace name predicate = waitFor (WaitConfig (Retry 300) (Seconds 1) message) (getSecret namespace name) predicate
 
 newSecret :: Text -> Secret
 newSecret name =

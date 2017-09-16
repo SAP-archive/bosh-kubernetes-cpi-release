@@ -72,7 +72,7 @@ class (Monad m) => MonadPod m where
   getPod :: Text -> Text -> m (Maybe Pod)
   updatePod :: Text -> Pod -> m Pod
   deletePod :: Text -> Text -> m Pod
-  waitForPod :: Text -> Text -> (Maybe Pod -> Bool) -> m (Maybe Pod)
+  waitForPod :: Text -> Text -> Text -> (Maybe Pod -> Bool) -> m (Maybe Pod)
 
 instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem m, MonadWait m, HasConfig c) => MonadPod (Resource c m) where
 
@@ -96,7 +96,7 @@ instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem
     logDebug $ "Delete pod '" <> namespace <> "/" <> name <> "'"
     restCall $ deleteNamespacedPod namespace name Nothing (mkDeleteOptions 0)
 
-  waitForPod namespace name predicate = waitFor (WaitConfig (Retry 300) (Seconds 1)) (getPod namespace name) predicate
+  waitForPod message namespace name predicate = waitFor (WaitConfig (Retry 300) (Seconds 1) message) (getPod namespace name) predicate
 
 newPod :: Text -> Container -> Pod
 newPod name container =

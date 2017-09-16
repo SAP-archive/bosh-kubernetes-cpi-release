@@ -20,7 +20,7 @@ module CPI.Kubernetes.Resource.Stub.State(
   , NoInput(..)
 ) where
 
-import           Prelude                                   (const, error)
+import           Prelude                                   (const, error, ($))
 
 import           Data.HashMap.Strict                       (HashMap)
 import qualified Data.HashMap.Strict                       as HashMap
@@ -29,12 +29,17 @@ import qualified Data.HashSet                              as HashSet
 import           Data.Hourglass
 import           Data.Monoid
 import           Data.Text                                 (Text)
+import qualified Data.Text                                 as Text
 
+import           Control.Applicative
 import           Control.Monad.Stub.Console
 import           Control.Monad.Stub.FileSystem
+import           Control.Monad.Stub.Time
 import           Control.Monad.Stub.Wait
 
-import           Control.Monad.Stub.Time
+import           CPI.Kubernetes.Config
+import qualified Servant.Common.BaseUrl                    as Url
+
 import           Kubernetes.Model.V1.PersistentVolumeClaim (PersistentVolumeClaim)
 import           Kubernetes.Model.V1.Pod                   (Pod)
 import           Kubernetes.Model.V1.Secret                (Secret)
@@ -129,10 +134,23 @@ emptyKube = KubeState {
 class HasImages a where
   asImages :: a -> HashSet Text
 
-data StubConfig = StubConfig
+instance HasConfig StubConfig where
+  asConfig = cpiConfig
+
+data StubConfig = StubConfig {
+  cpiConfig :: Config
+}
 
 emptyStubConfig :: StubConfig
-emptyStubConfig = StubConfig
+emptyStubConfig = StubConfig {
+  cpiConfig = Config {
+      clusterAccess = ClusterAccess {
+          server = Url.BaseUrl Url.Https "api.kubernetes.stub" 443 ""
+        , namespace = "stub"
+        , credentials = pure $ Token "stub-token"
+      }
+  }
+}
 
 instance HasImages KubeState where
   asImages = images

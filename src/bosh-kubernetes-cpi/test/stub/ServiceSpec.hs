@@ -28,7 +28,8 @@ import           CPI.Kubernetes.Resource.Metadata
 import           CPI.Kubernetes.Resource.Service      (MonadService,
                                                        createService,
                                                        deleteService,
-                                                       getService, newService,
+                                                       getService, listService,
+                                                       newService,
                                                        newServicePort,
                                                        newServiceSpec,
                                                        podSelector,
@@ -69,6 +70,7 @@ import           Data.Text                            (Text)
 import qualified Data.Text                            as Text
 
 import           Control.Exception.Safe
+import Control.Monad.Reader
 import           Control.Monad.FileSystem
 import           Control.Monad.Stub.StubMonad
 import           Data.Typeable
@@ -78,14 +80,18 @@ import           Servant.Common.Req                   (ServantError (..))
 import           System.Environment
 
 
-withService :: (MonadService m, MonadThrow m, MonadMask m) => Text -> Service -> m a -> m a
-withService namespace service action =
+withService :: (MonadService m, MonadThrow m, MonadMask m, HasConfig c, MonadReader c m) => Service -> m a -> m a
+withService service action =
   bracket
     (do
-      createdService <- createService "default" service
+      config <- asks asConfig
+      let ns = namespace $ clusterAccess config
+      createdService <- createService ns service
       pure (service, createdService))
     (\_ -> do
-      deleteService "default" $ service ^. name)
+      config <- asks asConfig
+      let ns = namespace $ clusterAccess config
+      deleteService ns $ service ^. name)
     (\(service, createdService) -> do
       action
       )
@@ -93,44 +99,72 @@ withService namespace service action =
 
 spec :: Spec
 spec = describe "MonadService" $ do
-  let testService = newService "test-service"
+  let newTestService name = newService name
                   & Service.spec ?~ serviceSpec
       serviceSpec = newServiceSpec [servicePort]
       servicePort = newServicePort "test-port" 80
+      testService = newTestService "test-service"
   describe "getService" $ do
     it "returns the service" $ do
       void $ run emptyStubConfig emptyKube $ do
-        withService "default" testService $ do
-          service <- getService "default" $ testService ^. name
+        config <- asks asConfig
+        let ns = namespace $ clusterAccess config
+        withService testService $ do
+          service <- getService ns $ testService ^. name
           lift $ service `shouldSatisfy` isJust
           lift $ (service ^. _Just.name) `shouldBe` (testService ^. name)
+
+  describe "listService" $ do
+    it "returns the list of services" $ do
+      void $ run emptyStubConfig emptyKube $ do
+        config <- asks asConfig
+        let ns = namespace $ clusterAccess config
+        withService testService $ do
+          services <- listService ns Nothing
+          lift $ services ^.. Service.services.each.name `shouldBe` ["test-service"]
+    context "when a selector is given" $ do
+      let testServiceWithLabel = newTestService "test-service-with-label" & label "select" .~ "match"
+      it "returns the list of services matching the selector" $ do
+        void $ run emptyStubConfig emptyKube $ do
+          config <- asks asConfig
+          let ns = namespace $ clusterAccess config
+          withService testService $ do
+            withService testServiceWithLabel $ do
+              services <- listService ns $ Just "select=match"
+              lift $ services ^.. Service.services.each.name `shouldBe` ["test-service-with-label"]
 
   describe "update" $ do
     it "can add a label to the service" $ do
       void $ run emptyStubConfig emptyKube $ do
-        withService "default" testService $ do
-          maybeService <- getService "default" $ testService ^. name
+        config <- asks asConfig
+        let ns = namespace $ clusterAccess config
+        withService testService $ do
+          maybeService <- getService ns $ testService ^. name
           lift $ maybeService `shouldSatisfy` isJust
           let service = fromJust maybeService
           let assignedService = service
                               & label "bosh.cloudfoundry.org/agent-id" .~ "test-agent"
-          updateService "default" assignedService
+          updateService ns assignedService
 
-          updatedService <- getService "default" $ testService ^. name
+          updatedService <- getService ns $ testService ^. name
           lift $ updatedService ^.. _Just.label "bosh.cloudfoundry.org/agent-id"
                             `shouldBe` ["test-agent"]
 
     it "can add a selector to the service" $ do
       void $ run emptyStubConfig emptyKube $ do
-        withService "default" testService $ do
-          maybeService <- getService "default" $ testService ^. name
+        config <- asks asConfig
+        let ns = namespace $ clusterAccess config
+        withService testService $ do
+          config <- asks asConfig
+          let ns = namespace $ clusterAccess config
+          maybeService <- getService ns $ testService ^. name
           lift $ maybeService `shouldSatisfy` isJust
           let service = fromJust maybeService
           let assignedService = service
                               & podSelector.at "bosh.cloudfoundry.org/agent-id" ?~ String "test-agent"
-          updateService "default" assignedService
+          updateService ns assignedService
 
-          updatedService <- getService "default" $ testService ^. name
+          updatedService <- getService ns $ testService ^. name
           lift $ updatedService ^.. _Just.podSelector.at "bosh.cloudfoundry.org/agent-id"._Just
                             `shouldBe` ["test-agent"]
 

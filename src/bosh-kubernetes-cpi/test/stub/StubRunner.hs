@@ -23,19 +23,22 @@ import           Data.Yaml
 
 import           Control.Exception.Safe
 import           Control.Monad
+import           Control.Monad.Reader
 import           Control.Monad.Stub.StubMonad
 import           Control.Monad.Trans
 import           Control.Monad.Trans.Maybe
 import           System.Environment
 
-type MR a = (forall m .
+type MR a = (forall c m .
               ( MonadPod (m IO)
               , MonadSecret (m IO)
               , MonadService (m IO)
               , MonadPVC (m IO)
               , MonadTrans m
               , MonadMask (m IO)
-              , MonadThrow (m IO)) => (m IO) a)
+              , MonadThrow (m IO)
+              , MonadReader c (m IO)
+              , HasConfig c) => (m IO) a)
 
 run :: StubConfig -> KubeState -> MR a -> IO a
 run stubConfig kubeState f = do

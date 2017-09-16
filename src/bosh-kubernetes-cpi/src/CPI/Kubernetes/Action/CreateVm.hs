@@ -147,7 +147,7 @@ createVm agentId stemcell cloudProperties networks diskLocality env = do
   vmType <- VmTypes.parseVmProperties cloudProperties
   let services = vmType ^. VmTypes.services
   services `forM_` (`assignTo` agentId)
-  _ <- waitForPod ns (Unwrapped agentId) (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
+  _ <- waitForPod "Pod to be running" ns (Unwrapped agentId) (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
   pure $ Base.VmId $ pod ^. name
 
 assignTo ::

@@ -92,4 +92,4 @@ instance (MonadThrow m, MonadWait m, Monoid w, HasSecrets s, HasWaitCount w, Has
                        )
     pure undefined
 
-  waitForSecret namespace name predicate = waitFor (WaitConfig (Retry 20) (Seconds 1)) (getSecret namespace name) predicate
+  waitForSecret message namespace name predicate = waitFor (WaitConfig (Retry 20) (Seconds 1) message) (getSecret namespace name) predicate

@@ -48,6 +48,7 @@ import qualified Servant.Common.Req
 import qualified CPI.Kubernetes.Action.CreateDisk          as CreateDisk
 import qualified CPI.Kubernetes.Action.CreateVm            as CreateVm
 import qualified CPI.Kubernetes.Action.DeleteDisk          as DeleteDisk
+import qualified CPI.Kubernetes.Action.DeleteVm            as DeleteVm
 import           Resource
 
 import qualified Kubernetes.Api.ApivApi                    as Kube
@@ -105,13 +106,10 @@ instance Base.MonadCpi Config IO where
 
   deleteVm :: Base.VmId
           -> Base.Cpi Config IO ()
-  deleteVm (Base.VmId vmId) = do
-    result <- getPod vmId
-    case result of
-      Nothing -> return ()
-      Just pod -> do
-        _ <- deletePod vmId
-        return ()
+  deleteVm vmId = do
+    logDebug $ "Delete VM with id '" <> Unwrapped vmId <> "'"
+    config <- ask
+    config `runResource` DeleteVm.deleteVm vmId
 
   createDisk :: Integer
     -> Base.DiskProperties

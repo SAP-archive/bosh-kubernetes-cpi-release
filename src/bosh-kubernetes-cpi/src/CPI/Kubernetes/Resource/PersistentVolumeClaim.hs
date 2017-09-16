@@ -98,7 +98,7 @@ class (Monad m) => MonadPVC m where
   getPersistentVolumeClaim :: Text -> Text -> m (Maybe PersistentVolumeClaim)
   updatePersistentVolumeClaim :: Text -> PersistentVolumeClaim -> m PersistentVolumeClaim
   deletePersistentVolumeClaim :: Text -> Text -> m PersistentVolumeClaim
-  waitForPersistentVolumeClaim :: Text -> Text -> (Maybe PersistentVolumeClaim -> Bool) -> m (Maybe PersistentVolumeClaim)
+  waitForPersistentVolumeClaim :: Text -> Text -> Text -> (Maybe PersistentVolumeClaim -> Bool) -> m (Maybe PersistentVolumeClaim)
 
 instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem m, MonadWait m, HasConfig c) => MonadPVC (Resource c m) where
 
@@ -122,7 +122,7 @@ instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem
     logDebug $ "Delete PersistentVolumeClaim '" <> namespace <> "/" <> name <> "'"
     restCall $ deleteNamespacedPersistentVolumeClaim namespace name Nothing (mkDeleteOptions 0)
 
-  waitForPersistentVolumeClaim namespace name predicate = waitFor (WaitConfig (Retry 300) (Seconds 1)) (getPersistentVolumeClaim namespace name) predicate
+  waitForPersistentVolumeClaim message namespace name predicate = waitFor (WaitConfig (Retry 300) (Seconds 1) message) (getPersistentVolumeClaim namespace name) predicate
 
 newPersistentVolumeClaim :: Text -> Text -> PersistentVolumeClaim
 newPersistentVolumeClaim namePrefix size =

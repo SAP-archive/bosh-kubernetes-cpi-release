@@ -10,6 +10,7 @@
 module CPI.Kubernetes.Resource.Service(
     Service
   , ServiceList
+  , services
   , MonadService(..)
   , newService
   , newServiceSpec
@@ -71,11 +72,11 @@ import           Data.Text.Encoding                  (decodeUtf8)
 
 class (Monad m) => MonadService m where
   createService :: Text -> Service -> m Service
-  listService :: Text -> m ServiceList
+  listService :: Text -> Maybe Text -> m ServiceList
   getService :: Text -> Text -> m (Maybe Service)
   updateService :: Text -> Service -> m Service
   deleteService :: Text -> Text -> m Status
-  waitForService :: Text -> Text -> (Maybe Service -> Bool) -> m (Maybe Service)
+  waitForService :: Text -> Text -> Text -> (Maybe Service -> Bool) -> m (Maybe Service)
 
 instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem m, MonadWait m, HasConfig c) => MonadService (Resource c m) where
 
@@ -83,9 +84,9 @@ instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem
     logDebug $ "Creating secret '" <> (decodeUtf8.toStrict.encode) secret <> "'"
     restCall $ createNamespacedService namespace Nothing secret
 
-  listService namespace = do
+  listService namespace selector = do
     logDebug $ "List secrets in '" <> namespace <> "'"
-    restCall $ listNamespacedService namespace Nothing Nothing Nothing Nothing Nothing Nothing
+    restCall $ listNamespacedService namespace Nothing selector Nothing Nothing Nothing Nothing
 
   getService namespace name = do
     logDebug $ "Get secret '" <> namespace <> "/" <> name <> "'"
@@ -99,7 +100,7 @@ instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem
     logDebug $ "Delete secret '" <> namespace <> "/" <> name <> "'"
     restCall $ deleteNamespacedService namespace name Nothing
 
-  waitForService namespace name predicate = waitFor (WaitConfig (Retry 300) (Seconds 1)) (getService namespace name) predicate
+  waitForService message namespace name predicate = waitFor (WaitConfig (Retry 300) (Seconds 1) message) (getService namespace name) predicate
 
 newService :: Text -> Service
 newService serviceName = mkService
@@ -120,3 +121,6 @@ podSelector = serviceSpec.ServiceSpec.selector.non (Any.Any HashMap.empty).Any.a
 
 servicePort :: Text -> Traversal' Service ServicePort
 servicePort name = serviceSpec.ServiceSpec.ports.each.filtered (\p -> p ^. ServicePort.name == Just name)
+
+services :: Traversal' ServiceList [Service]
+services = ServiceList.items.non []

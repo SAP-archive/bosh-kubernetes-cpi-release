@@ -52,6 +52,7 @@ import           Data.Yaml
 
 import           Control.Exception.Safe
 import           Control.Monad.FileSystem
+import           Control.Monad.Reader
 import           Control.Monad.Stub.StubMonad
 import           Control.Monad.Wait
 import           Data.Typeable
@@ -60,15 +61,17 @@ import           Network.HTTP.Types.Status
 import           Servant.Common.Req                                 (ServantError (..))
 import           System.Environment
 
-withPersistentVolumeClaim :: (MonadPVC m, MonadThrow m, MonadMask m) => Text -> PersistentVolumeClaim -> ((PersistentVolumeClaim, PersistentVolumeClaim) -> m a) -> m a
-withPersistentVolumeClaim namespace persistentVolumeClaim action =
+withPersistentVolumeClaim :: (MonadPVC m, MonadThrow m, MonadMask m, HasConfig c, MonadReader c m) => PersistentVolumeClaim -> ((PersistentVolumeClaim, PersistentVolumeClaim) -> m a) -> m a
+withPersistentVolumeClaim persistentVolumeClaim action = do
+  config <- asks asConfig
+  let ns = namespace $ clusterAccess config
   bracket
     (do
-      createdPersistentVolumeClaim <- createPersistentVolumeClaim "default" persistentVolumeClaim
+      createdPersistentVolumeClaim <- createPersistentVolumeClaim ns persistentVolumeClaim
       pure (persistentVolumeClaim, createdPersistentVolumeClaim))
     (\(_, pvc) -> do
-      deletePersistentVolumeClaim "default" $ pvc ^. name
-      waitForPersistentVolumeClaim "default" (pvc ^. name) isNothing)
+      deletePersistentVolumeClaim ns $ pvc ^. name
+      waitForPersistentVolumeClaim "PVC to be deleted" ns (pvc ^. name) isNothing)
     action
 
 ignoreArgument :: f -> (a -> f)
@@ -81,8 +84,10 @@ spec = describe "PersistentVolumeClaim" $ do
 
     it "creates a PersistentVolumeClaim with the given name prefix" $ do
       void $ run emptyStubConfig emptyKube $ do
-        withPersistentVolumeClaim "my-pvc" testPVC $ \(input, output) -> do
-              maybePvc <- getPersistentVolumeClaim "default" $ output ^. name
+        config <- asks asConfig
+        let ns = namespace $ clusterAccess config
+        withPersistentVolumeClaim testPVC $ \(input, output) -> do
+              maybePvc <- getPersistentVolumeClaim ns $ output ^. name
               lift $ maybePvc `shouldSatisfy` isJust
               let pvc = fromJust maybePvc
               lift $ (Text.unpack $ output ^. name) `shouldStartWith` (Text.unpack $ input ^. generateName)
@@ -90,24 +95,28 @@ spec = describe "PersistentVolumeClaim" $ do
 
     it "creates a PersistentVolumeClaim with the given size" $ do
       void $ run emptyStubConfig emptyKube $ do
-        withPersistentVolumeClaim "my-pvc" testPVC $ \(input, output) -> do
+        withPersistentVolumeClaim testPVC $ \(input, output) -> do
           lift $ (output ^? PersistentVolumeClaim.resourceRequests.at "capacity"._Just) `shouldBe` (Just "10Mi")
 
     it "creates a PersistentVolumeClaim in state 'Pending'" $ do
       void $ run emptyStubConfig emptyKube $ do
-        withPersistentVolumeClaim "my-pvc" testPVC $ \(input, output) -> do
+        withPersistentVolumeClaim testPVC $ \(input, output) -> do
           lift $ output ^. PersistentVolumeClaim.status.PersistentVolumeClaim.phase `shouldBe` Just "Pending"
 
     it "creates a PersistentVolumeClaim that will end up in state 'Bound'" $ do
       void $ run emptyStubConfig emptyKube $ do
-        withPersistentVolumeClaim "my-pvc" testPVC $ \(input, output) -> do
-          void $ waitForPersistentVolumeClaim "default" (output ^. name) (\pvc -> pvc ^. _Just.PersistentVolumeClaim.status.PersistentVolumeClaim.phase._Just == "Bound")
+        config <- asks asConfig
+        let ns = namespace $ clusterAccess config
+        withPersistentVolumeClaim testPVC $ \(input, output) -> do
+          void $ waitForPersistentVolumeClaim "PVC to be bound" ns (output ^. name) (\pvc -> pvc ^. _Just.PersistentVolumeClaim.status.PersistentVolumeClaim.phase._Just == "Bound")
 
   describe "delete" $ do
     context "when a PersistentVolumeClaim with the given name does not exist" $
       it "throws ServantError reason 404 NOT FOUND" $ do
-        void $ run emptyStubConfig emptyKube $
-          deletePersistentVolumeClaim "default" "does-not-exist"
+        void $ run emptyStubConfig emptyKube $ do
+          config <- asks asConfig
+          let ns = namespace $ clusterAccess config
+          deletePersistentVolumeClaim ns "does-not-exist"
         `shouldThrow` (servantErrorWithStatusCode 404)
 
 servantErrorWithStatusCode :: Int -> Selector ServantError
@@ -117,4 +126,4 @@ cloudErrorWithMessage :: Text -> Selector Base.CloudError
 cloudErrorWithMessage expectedMessage (Base.CloudError message) = expectedMessage == message
 
 timeout :: Selector Timeout
-timeout Timeout = True
+timeout (Timeout _) = True

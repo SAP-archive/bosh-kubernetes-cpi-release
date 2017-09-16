@@ -1,16 +1,25 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts    #-}
 
-module CPI.Kubernetes.Action.DeleteDisk(
-  deleteDisk
+module CPI.Kubernetes.Action.DeleteVm(
+  deleteVm
 ) where
 
 import CPI.Kubernetes.Action.Common
 
 import qualified CPI.Base                                 as Base
 import           CPI.Kubernetes.Config
-import qualified          CPI.Kubernetes.Resource.Metadata         as Metadata
-import           CPI.Kubernetes.Resource.PersistentVolumeClaim
+import           CPI.Kubernetes.Resource.Metadata         as Metadata
+import           CPI.Kubernetes.Resource.Pod              (MonadPod, deletePod,
+                                                           waitForPod)
+import qualified CPI.Kubernetes.Resource.Pod              as Pod
+import           CPI.Kubernetes.Resource.Secret           (MonadSecret,
+                                                           createSecret, deleteSecret, waitForSecret, data',
+                                                           newSecret)
+import qualified CPI.Kubernetes.Resource.Secret           as Secret
+import           CPI.Kubernetes.Resource.Service          (MonadService, getService, listService,
+                                                           updateService)
+import qualified CPI.Kubernetes.Resource.Service          as Service
 import qualified CPI.Kubernetes.VmTypes                   as VmTypes
 import           Resource
 
@@ -55,7 +64,7 @@ import qualified Kubernetes.Model.V1.VolumeMount          as VolumeMount
 import qualified CPI.Kubernetes.Base64                    as Base64
 import           Data.ByteString.Lazy                     (toStrict)
 import qualified Data.HashMap.Strict                      as HashMap
-import  Data.HashMap.Strict                       (HashMap)
+import           Data.HashMap.Strict                       (HashMap)
 import           Data.Text                                (Text)
 import qualified Data.Text                                as Text
 import           Data.Text.Encoding
@@ -66,32 +75,55 @@ import           Control.Monad.Log
 import           Control.Monad.Reader
 import           Data.Aeson.Lens
 import           Data.Semigroup
+import           Data.Maybe
 
-import Control.Applicative
 import           Control.Exception.Safe
 import           Control.Monad.FileSystem
 import           Data.Aeson
 import qualified Data.Aeson                               as Aeson
-import Data.Maybe
-import Servant.Common.Req
-import Network.HTTP.Types.Status
 
-deleteDisk ::
+deleteVm ::
     (  HasConfig c
-     , MonadCatch m
      , MonadReader c m
      , MonadLog (WithSeverity Text) m
      , MonadFileSystem m
-     , MonadPVC m) =>
-     Base.DiskId
+     , MonadPod m
+     , MonadService m
+     , MonadSecret m
+     , MonadCatch m) =>
+     Base.VmId
   -> m ()
-deleteDisk diskId = do
-  logDebug $ "Delete disk '" <> Unwrapped diskId <> "'"
+deleteVm vmId = do
+  logDebug $ "Delete VM with id '" <> Unwrapped vmId <> "'"
   config <- asks asConfig
   let ns = config & clusterAccess & namespace
-  pvc <- ignoringNotFound $ deletePersistentVolumeClaim ns (Unwrapped diskId)
-  void $ waitForPersistentVolumeClaim
-    "PVC to be deleted"
-    ns
-    (pvc ^. _Just.Metadata.name)
-    isNothing
+  disassociate (Wrapped (Unwrapped vmId))
+  pod <- ignoringNotFound $ deletePod ns (Unwrapped vmId)
+  void $ waitForPod
+      "Pod to be deleted"
+      ns
+      (pod ^. _Just.Metadata.name)
+      isNothing
+  secret <- ignoringNotFound $ deleteSecret ns ("agent-settings-" <> (Unwrapped vmId))
+  void $ waitForSecret
+      "Secret to be deleted"
+      ns
+      ("agent-settings-" <> (Unwrapped vmId))
+      isNothing
+
+disassociate ::
+  (  HasConfig c
+   , MonadReader c m
+   , MonadLog (WithSeverity Text) m
+   , MonadFileSystem m
+   , MonadService m) => Base.AgentId -> m ()
+disassociate agentId = do
+  config <- asks asConfig
+  let ns = config & clusterAccess & namespace
+  serviceList <- listService ns $ Just $ "bosh.cloudfoundry.org/agent-id=" <> Unwrapped agentId
+  let serviceNames = serviceList ^.. Service.services.each.name
+  services <- catMaybes <$> forM serviceNames (getService ns)
+  let remove label service = service
+                             & labels.at label .~ Nothing
+                             & Service.podSelector.at label .~ Nothing
+  forM_ ((remove "bosh.cloudfoundry.org/agent-id") <$> services) (updateService ns)

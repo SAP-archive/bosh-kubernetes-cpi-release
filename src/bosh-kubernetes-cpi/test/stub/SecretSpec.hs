@@ -64,6 +64,7 @@ import qualified Data.Text                              as Text
 
 import           Control.Exception.Safe
 import           Control.Monad.FileSystem
+import           Control.Monad.Reader
 import           Control.Monad.Stub.StubMonad
 import           Data.Typeable
 import           GHC.Stack.Types
@@ -77,16 +78,18 @@ spec =
     let secret = newSecret "test"
     it "creates a secret with the given name" $ do
       void $ run emptyStubConfig emptyKube $ do
+        config <- asks asConfig
+        let ns = namespace $ clusterAccess config
         bracket
           (do
-            createdSecret <- createSecret "default" secret
+            createdSecret <- createSecret ns secret
             pure (secret, createdSecret))
           (\_ -> do
-            deleteSecret "default" "test")
+            deleteSecret ns "test")
           (\(secret, createdSecret) -> do
             let createdSecretName = createdSecret ^. Secret.metadata._Just.ObjectMeta.name._Just
             lift $ createdSecretName `shouldBe` "test"
-            secret' <- getSecret "default" "test"
+            secret' <- getSecret ns "test"
             lift $ secret' `shouldSatisfy` isJust
             lift $ (secret ^. name) `shouldBe` (createdSecret ^. name)
             )

@@ -61,3 +61,9 @@ label l = labels.at l.non ""._String
 
 labels :: (HasMetadata m) => Traversal' m Object
 labels = metadata.non mkObjectMeta.ObjectMeta.labels.non (Any.Any HashMap.empty).Any.any
+
+annotation :: (HasMetadata m) => Text -> Traversal' m Text
+annotation l = annotations.at l.non ""._String
+
+annotations :: (HasMetadata m) => Traversal' m Object
+annotations = metadata.non mkObjectMeta.ObjectMeta.annotations.non (Any.Any HashMap.empty).Any.any

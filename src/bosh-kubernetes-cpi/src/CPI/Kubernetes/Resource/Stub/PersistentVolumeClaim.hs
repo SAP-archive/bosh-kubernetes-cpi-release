@@ -133,4 +133,4 @@ instance (MonadIO m, MonadThrow m, Monoid w, HasPVCs s, HasWaitCount w, HasTime 
         , responseBody = ""
       }
 
-  waitForPersistentVolumeClaim namespace name predicate = waitFor (WaitConfig (Retry 20) (Seconds 1)) (getPersistentVolumeClaim namespace name) predicate
+  waitForPersistentVolumeClaim message namespace name predicate = waitFor (WaitConfig (Retry 20) (Seconds 1) message) (getPersistentVolumeClaim namespace name) predicate

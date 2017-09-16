@@ -90,7 +90,7 @@ instance (MonadThrow m, Monoid w, HasPods s, HasSecrets s, HasImages s, HasWaitC
             volumeMount = mkVolumeMount "default-token" "/var/run/secrets/kubernetes.io/serviceaccount"
                         & VolumeMount.readOnly .~ Just True
             in pod
-             & Pod.spec._Just.PodSpec.serviceAccountName .~ Just namespace
+             & Pod.spec._Just.PodSpec.serviceAccountName .~ Just "default"
              & Pod.spec._Just.PodSpec.volumes.non [] %~ (\volumes -> volume <| volumes)
              & container.Container.volumeMounts.non [] %~ (\mounts -> volumeMount <| mounts)
 
@@ -142,10 +142,21 @@ instance (MonadThrow m, Monoid w, HasPods s, HasSecrets s, HasImages s, HasWaitC
                      after :: GHC.Int64 -> Elapsed
                      after n = timestamp + (Elapsed $ Seconds n)
                      in
-                       HashMap.insert (after 2) deleted (HashMap.insert (after 1) terminating events)
-                       )
+                       HashMap.fromList [
+                           (after 1, terminating)
+                         , (after 2, deleted)
+                       ])
 
     pods <- State.gets asPods
-    pure undefined
+    case HashMap.lookup (namespace, name) pods of
+      Just pvc -> pure pvc
+      Nothing  -> throwM FailureResponse {
+          responseStatus = Status {
+            statusMessage = "Not Found"
+            , statusCode = 404
+          }
+        , responseContentType = "text/plain"
+        , responseBody = ""
+      }
 
-  waitForPod namespace name predicate = waitFor (WaitConfig (Retry 20) (Seconds 1)) (getPod namespace name) predicate
+  waitForPod message namespace name predicate = waitFor (WaitConfig (Retry 20) (Seconds 1) message) (getPod namespace name) predicate

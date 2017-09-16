@@ -113,7 +113,7 @@ spec = describe "deleteDisk" $ do
                  images = HashSet.singleton "some-image"
                } $ do
         pvc <- createPersistentVolumeClaim "bosh" testPVC
-        _ <- waitForPersistentVolumeClaim "bosh" (pvc ^. name) (\pvc -> pvc ^. _Just.status.phase._Just == "Bound")
+        _ <- waitForPersistentVolumeClaim "PVC to be bound" "bosh" (pvc ^. name) (\pvc -> pvc ^. _Just.status.phase._Just == "Bound")
 
         deleteDisk $ Base.DiskId $ pvc ^. name
 

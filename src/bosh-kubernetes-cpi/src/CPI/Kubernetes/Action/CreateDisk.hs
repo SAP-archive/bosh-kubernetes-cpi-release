@@ -88,6 +88,7 @@ createDisk size cloudProperties (Base.VmId vmId) = do
   pvc <- createPersistentVolumeClaim ns $
             newPersistentVolumeClaim "bosh-disk-" (pvSize size)
   boundPVC <- waitForPersistentVolumeClaim
+                "PVC to be bound"
                 ns
                 (pvc ^. Metadata.name)
                 (\pvc -> pvc ^. _Just.status.phase._Just == "Bound")

@@ -57,7 +57,7 @@ import           CPI.Kubernetes.Resource.Pod
 import qualified CPI.Kubernetes.Resource.Pod            as Pod
 import           CPI.Kubernetes.Resource.Secret         (getSecret)
 import qualified CPI.Kubernetes.Resource.Secret         as Secret
-import           CPI.Kubernetes.Resource.Service
+import           CPI.Kubernetes.Resource.Service        (getService)
 import qualified CPI.Kubernetes.Resource.Service        as Service
 import           CPI.Kubernetes.Resource.Stub.Pod
 import           CPI.Kubernetes.Resource.Stub.Secret
@@ -524,6 +524,7 @@ spec = describe "createVm" $ do
           lift $ maybeService `shouldSatisfy` isJust
           lift $ maybeService ^.. _Just.label "bosh.cloudfoundry.org/agent-id" `shouldBe` ["test-agent"]
           lift $ maybeService ^.. _Just.Service.podSelector.at "bosh.cloudfoundry.org/agent-id"._Just `shouldBe` ["test-agent"]
+
     context "when Services don't exist" $ do
       it "should fail" $ do
         let createVmAction = void $ runStubT'

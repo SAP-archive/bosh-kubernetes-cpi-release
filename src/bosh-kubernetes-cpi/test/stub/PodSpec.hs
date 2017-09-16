@@ -66,6 +66,7 @@ import           Data.Text                              (Text)
 import qualified Data.Text                              as Text
 
 import           Control.Exception.Safe
+import Control.Monad.Reader
 import           Control.Monad.FileSystem
 import           Control.Monad.Stub.StubMonad
 import           Control.Monad.Wait
@@ -75,6 +76,23 @@ import           Network.HTTP.Types.Status
 import           Servant.Common.Req                     (ServantError (..))
 import           System.Environment
 
+withPod :: (MonadPod m, MonadThrow m, MonadMask m, HasConfig c, MonadReader c m) => Pod -> (Pod -> m a) -> m a
+withPod pod action = do
+  config <- asks asConfig
+  let ns = namespace $ clusterAccess config
+  bracket
+    (do
+      createPod ns pod
+    )
+    (\pod' -> do
+      let podName = pod' ^. name
+      deletePod ns podName
+      waitForPod "Pod to be deleted" ns podName isNothing
+    )
+    (\pod' -> do
+      action pod
+    )
+
 spec :: Spec
 spec =
   describe "create" $ do
@@ -82,49 +100,41 @@ spec =
         container = newContainer "busybox" "busybox"
     it "creates a pod with the given name" $ do
       void $ run emptyStubConfig emptyKube $ do
-        bracket
-          (do
-            createdPod <- createPod "default" pod
-            pure (pod, createdPod))
-          (\_ -> do
-            deletePod "default" "test"
-            waitForPod "default" "test" isNothing)
-          (\(pod, createdPod) -> do
+        config <- asks asConfig
+        let ns = namespace $ clusterAccess config
+        withPod pod $ do
+          (\createdPod -> do
             let createdPodName = createdPod ^. Pod.metadata._Just.ObjectMeta.name._Just
             lift $ createdPodName `shouldBe` "test"
-            pod' <- getPod "default" "test"
+            pod' <- getPod ns createdPodName
             lift $ pod' `shouldSatisfy` isJust
             lift $ (pod ^. name) `shouldBe` (createdPod ^. name)
             )
 
     it "creates a pod with default service account" $ do
       void $ run emptyStubConfig emptyKube $ do
-        bracket
-          (do
-            createdPod <- createPod "default" pod
-            pure (pod, createdPod))
-          (\_ -> do
-            deletePod "default" "test"
-            waitForPod "default" "test" isNothing)
-          (\(pod, createdPod) -> do
-            lift $ (createdPod ^. name) `shouldBe` "test"
-            lift $ createdPod `shouldSatisfy` hasServiceAccount "default"
-            lift $ createdPod `shouldSatisfy` hasSecretVolume "default-token"
-            lift $ (createdPod ^.. Pod.container.Container.volumeMounts._Just.each.VolumeMount.mountPath) `shouldBe` ["/var/run/secrets/kubernetes.io/serviceaccount"]
-            lift $ (createdPod ^.. Pod.container.Container.volumeMounts._Just.each.VolumeMount.readOnly) `shouldBe` [Just True]
-            )
+        config <- asks asConfig
+        let ns = namespace $ clusterAccess config
+        withPod pod $ do
+          (\pod' -> do
+              lift $ (pod' ^. name) `shouldBe` "test"
+              maybePod <- waitForPod "Pod to have default service account" ns (pod' ^. name) (maybe False (hasServiceAccount "default"))
+              lift $ maybePod `shouldSatisfy` isJust
+              let Just pod'' = maybePod
+              lift $ pod'' `shouldSatisfy` hasServiceAccount "default"
+              lift $ pod'' `shouldSatisfy` hasSecretVolume "default-token"
+              lift $ (pod'' ^.. Pod.container.Container.volumeMounts._Just.each.VolumeMount.mountPath) `shouldBe` ["/var/run/secrets/kubernetes.io/serviceaccount"]
+              lift $ (pod'' ^.. Pod.container.Container.volumeMounts._Just.each.VolumeMount.readOnly) `shouldBe` [Just True]
+              )
 
     it "creates a pod in state 'Pending'" $ do
       void $ run emptyStubConfig emptyKube $ do
-        bracket
-          (do
-            createdPod <- createPod "default" pod
-            pure (pod, createdPod))
-          (\_ -> do
-            deletePod "default" "test"
-            waitForPod "default" "test" isNothing)
-          (\(pod, createdPod) -> do
-            lift $ (createdPod ^. Pod.status.Pod.phase._Just) `shouldBe` "Pending"
+        withPod pod $ do
+          (\pod' -> do
+            config <- asks asConfig
+            let ns = namespace $ clusterAccess config
+            maybePendingPod <- waitForPod "Pod to be pending" ns (pod' ^. name) (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Pending")
+            lift $ maybePendingPod `shouldSatisfy` isJust
             )
 
     it "creates a pod that will end up in state 'Running'" $ do
@@ -134,15 +144,11 @@ spec =
                   images = HashSet.singleton "busybox"
                 , secrets = HashMap.singleton ("default", "default-token") (newSecret "default-token")
               } $ do
-        bracket
-          (do
-            _ <- createPod "default" pod
-            pure pod)
-          (\_ -> do
-            deletePod "default" "test"
-            waitForPod "default" "test" isNothing)
-          (\pod -> do
-            runningPod <- waitForPod "default" "test" (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
+        withPod pod $ do
+          (\pod' -> do
+            config <- asks asConfig
+            let ns = namespace $ clusterAccess config
+            runningPod <- waitForPod "Pod to be running" ns (pod' ^. name) (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
             lift $ (runningPod ^. _Just.Pod.status.Pod.phase._Just) `shouldBe` "Running"
             )
 
@@ -159,31 +165,22 @@ spec =
                     images = HashSet.singleton "busybox"
                   , secrets = HashMap.singleton ("default", "default-token") (newSecret "default-token")
                 } $ do
-          bracket
-            (do
-              _ <- createSecret "default" secret
-              _ <- createPod "default" pod'
-              pure pod)
-            (\_ -> do
-              deletePod "default" "test"
-              waitForPod "default" "test" isNothing
-              deleteSecret "default" "test-secret"
-              waitForSecret "default" "test-secret" isNothing
-              )
-            (\pod -> do
-              runningPod <- waitForPod "default" "test" (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
-              lift $ (runningPod ^. _Just.Pod.status.Pod.phase._Just) `shouldBe` "Running"
-              )
+            withPod pod $ do
+              (\pod' -> do
+                config <- asks asConfig
+                let ns = namespace $ clusterAccess config
+                runningPod <- waitForPod "Pod to be running" ns (pod' ^. name) (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
+                lift $ (runningPod ^. _Just.Pod.status.Pod.phase._Just) `shouldBe` "Running"
+                )
 
     context "when a pod with the given name already exists" $
       it "throws ServantError reason 409 CONFLICT" $ do
         void $ run emptyStubConfig emptyKube $
-          bracket
-            (createPod "default" pod)
-            (\_ -> do
-                     deletePod "default" "test"
-                     waitForPod "default" "test" isNothing)
-            (\_ -> createPod "default" pod)
+          withPod pod $ do
+            (\pod' -> do
+              config <- asks asConfig
+              let ns = namespace $ clusterAccess config
+              createPod ns pod)
         `shouldThrow` (servantErrorWithStatusCode 409)
 
     context "when attached secret does not exist" $ do
@@ -193,17 +190,11 @@ spec =
                               & Volume.secret .~ (Just $ mkSecretVolumeSource
                               & SecretVolumeSource.secretName .~ (Just "does-not-exist"))
         void $ run emptyStubConfig emptyKube $ do
-          bracket
-            (do
-              _ <- createPod "default" pod'
-              pure pod)
-            (\_ -> do
-              deletePod "default" "test"
-              waitForPod "default" "test" isNothing
-              )
-            (\pod -> do
-              runningPod <- waitForPod "default" "test" (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
-              lift $ (runningPod ^. _Just.Pod.status.Pod.phase._Just) `shouldBe` "Pending"
+          withPod pod' $ do
+            (\pod' -> do
+              config <- asks asConfig
+              let ns = namespace $ clusterAccess config
+              waitForPod "Pod to be running" ns (pod' ^. name) (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
               )
         `shouldThrow` timeout
 
@@ -214,7 +205,7 @@ cloudErrorWithMessage :: Text -> Selector Base.CloudError
 cloudErrorWithMessage expectedMessage (Base.CloudError message) = expectedMessage == message
 
 timeout :: Selector Timeout
-timeout Timeout = True
+timeout (Timeout _) = True
 
 hasSecretVolume name pod = let
   volumes = pod ^. Pod.spec._Just.PodSpec.volumes._Just

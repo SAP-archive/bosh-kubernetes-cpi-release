@@ -25,7 +25,9 @@ library
                      , CPI.Kubernetes.Networks
                      , CPI.Kubernetes.VmTypes
                      , CPI.Kubernetes.Secrets
+                     , CPI.Kubernetes.Action.Common
                      , CPI.Kubernetes.Action.CreateVm
+                     , CPI.Kubernetes.Action.DeleteVm
                      , CPI.Kubernetes.Action.CreateDisk
                      , CPI.Kubernetes.Action.DeleteDisk
                      , Resource
@@ -89,6 +91,7 @@ test-suite unit
   other-modules:       CPI.Kubernetes.Base64Spec
                      , CPI.Kubernetes.VmTypesSpec
                      , CPI.Kubernetes.ConfigSpec
+                     , CPI.Kubernetes.Action.DeleteVmSpec
                      , CPI.Kubernetes.Action.CreateVmSpec
                      , CPI.Kubernetes.Action.CreateDiskSpec
                      , CPI.Kubernetes.Action.DeleteDiskSpec
