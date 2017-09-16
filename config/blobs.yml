@@ -6,10 +6,6 @@ ghc/ghc-8.0.1-x86_64-apple-darwin.tar.xz:
   size: 118496652
   object_id: 8804f92b-2a54-431a-6eb0-12e9aca2d82c
   sha: e7a1c558a095afbc4fb514256be940ddb0f23a29
-ghc/ghc-8.0.1-x86_64-centos67-linux.tar.xz:
-  size: 112386128
-  object_id: e7c2f2ec-c974-4b75-7c05-04818f97abbc
-  sha: 1735fc722cc1c72b446534e8d021d09f383856ff
 ghc/ghc-8.0.1-x86_64-deb8-linux.tar.xz:
   size: 112955808
   object_id: c57f0530-81b9-4936-6b3d-0b255a5079d1
