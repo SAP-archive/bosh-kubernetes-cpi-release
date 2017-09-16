@@ -75,7 +75,7 @@ jobs:
         PROJECT: ((project))
         ZONE: ((zone))
         CLUSTER: ((cluster))
-    
+
     - task: create-env
       tags: ((tags))
       file: cpi-src/ci/tasks/create-env.yml
@@ -88,6 +88,12 @@ jobs:
         CLUSTER: ((cluster))
         BOSH_PRIVATE_KEY: ((bosh_private_key))
         STEMCELL_OS: ubuntu-trusty
+
+    - task: run-bats
+      tags: ((tags))
+      file: cpi-src/ci/tasks/run-bats.yml
+      input_mapping:
+        kubernetes-stemcell: kubernetes-ubuntu-stemcell
 
     - task: delete-namespace
       tags: ((tags))
@@ -184,7 +190,7 @@ resources:
   - name: kubernetes-ubuntu-stemcell
     type: s3
     source:
-      regexp: bosh-stemcell-([0-9.]+)-kubernetes-ubuntu-trusty-go_agent\.tgz 
+      regexp: bosh-stemcell-([0-9.]+)-kubernetes-ubuntu-trusty-go_agent\.tgz
       bucket: bosh-kubernetes-cpi-stemcells
       region_name: eu-central-1
 
