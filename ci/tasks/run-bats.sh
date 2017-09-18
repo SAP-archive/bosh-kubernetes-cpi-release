@@ -2,6 +2,8 @@
 
 set -e
 
+source cpi-src/ci/tasks/utils.sh
+
 PREPARE_NAMESPACE=$PWD/prepare-namespace
 CREATE_ENV=$PWD/create-env
 
@@ -56,14 +58,10 @@ export BAT_NETWORKING=dynamic
 
 export BOSH_OS_BATS=false
 
-export BOSH_ENVIRONMENT=$(cat $PREPARE_NAMESPACE/service_ip)
-export BOSH_CLIENT=admin
-export BOSH_CLIENT_SECRET=$(bosh int $CREATE_ENV/creds.yml --path /admin_password)
-bosh int $CREATE_ENV/creds.yml --path /director_ssl/ca > ca.cert
-export BOSH_CA_CERT=$PWD/ca.cert
-
 echo "using bosh CLI version..."
-bosh --version
+bosh2 --version
+
+target_director
 
 cd bats
 bundle install -j4
