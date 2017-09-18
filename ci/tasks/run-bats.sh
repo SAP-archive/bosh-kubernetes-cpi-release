@@ -4,8 +4,8 @@ set -e
 
 source cpi-src/ci/tasks/utils.sh
 
-export PREPARE_NAMESPACE=$PWD/prepare-namespace
-export CREATE_ENV=$PWD/create-env
+PREPARE_NAMESPACE=$PWD/prepare-namespace
+CREATE_ENV=$PWD/create-env
 
 # path to the stemcell you want to use for testing
 export BAT_STEMCELL=$(ls $PWD/kubernetes-stemcell/bosh-stemcell-*-kubernetes-ubuntu-trusty-go_agent.tgz)
@@ -61,7 +61,7 @@ export BOSH_OS_BATS=false
 echo "using bosh CLI version..."
 bosh2 --version
 
-target_director
+target_director $PREPARE_NAMESPACE $CREATE_ENV
 
 cd bats
 bundle install -j4
