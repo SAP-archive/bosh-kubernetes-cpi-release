@@ -10,6 +10,7 @@ module CPI.Kubernetes.Resource.Secret(
   , MonadSecret(..)
   , newSecret
   , data'
+  , secrets
 ) where
 
 import qualified CPI.Base                            as Base
@@ -56,7 +57,7 @@ import           Data.Text.Encoding                  (decodeUtf8)
 
 class (Monad m) => MonadSecret m where
   createSecret :: Text -> Secret -> m Secret
-  listSecret :: Text -> m SecretList
+  listSecret :: Text -> Maybe Text -> m SecretList
   getSecret :: Text -> Text -> m (Maybe Secret)
   updateSecret :: Text -> Secret -> m Secret
   deleteSecret :: Text -> Text -> m Status
@@ -68,9 +69,9 @@ instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem
     logDebug $ "Creating secret '" <> (decodeUtf8.toStrict.encode) secret <> "'"
     restCall $ createNamespacedSecret namespace Nothing secret
 
-  listSecret namespace = do
+  listSecret namespace selector = do
     logDebug $ "List secrets in '" <> namespace <> "'"
-    restCall $ listNamespacedSecret namespace Nothing Nothing Nothing Nothing Nothing Nothing
+    restCall $ listNamespacedSecret namespace Nothing selector Nothing Nothing Nothing Nothing
 
   getSecret namespace name = do
     logDebug $ "Get secret '" <> namespace <> "/" <> name <> "'"
@@ -95,3 +96,6 @@ newSecret name =
 
 data' :: Traversal' Secret Object
 data' = Secret.data_.non (Any.Any HashMap.empty).Any.any
+
+secrets :: Traversal' SecretList [Secret]
+secrets = SecretList.items

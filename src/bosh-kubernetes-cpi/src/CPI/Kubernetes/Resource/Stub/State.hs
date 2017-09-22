@@ -60,8 +60,8 @@ instance HasPods KubeState where
 }
 
 class HasSecrets a where
-  asSecrets :: a -> HashMap (Text, Text) Secret
-  updateSecrets :: HashMap (Text, Text) Secret -> a -> a
+  asSecrets :: a -> ResourceMap Secret
+  updateSecrets :: ResourceMap Secret -> a -> a
   withSecrets :: (ResourceMap Secret -> ResourceMap Secret) -> a -> a
   withSecrets f a = f (asSecrets a) `updateSecrets` a
 
@@ -72,8 +72,8 @@ instance HasSecrets KubeState where
   }
 
 class HasServices a where
-  asServices :: a -> HashMap (Text, Text) Service
-  updateServices :: HashMap (Text, Text) Service -> a -> a
+  asServices :: a -> ResourceMap Service
+  updateServices :: ResourceMap Service -> a -> a
   withServices :: (ResourceMap Service -> ResourceMap Service) -> a -> a
   withServices f a = f (asServices a) `updateServices` a
 
@@ -84,8 +84,8 @@ instance HasServices KubeState where
   }
 
 class HasPVCs a where
-  asPVCs :: a -> HashMap (Text, Text) PersistentVolumeClaim
-  updatePVCs :: HashMap (Text, Text) PersistentVolumeClaim -> a -> a
+  asPVCs :: a -> ResourceMap PersistentVolumeClaim
+  updatePVCs :: ResourceMap PersistentVolumeClaim -> a -> a
   withPVCs :: (ResourceMap PersistentVolumeClaim -> ResourceMap PersistentVolumeClaim) -> a -> a
   withPVCs f a = f (asPVCs a) `updatePVCs` a
 
@@ -111,10 +111,10 @@ instance HasTimeline KubeState where
   }
 
 data KubeState = KubeState {
-    pods                   :: HashMap (Text, Text) Pod
-  , secrets                :: HashMap (Text, Text) Secret
-  , services               :: HashMap (Text, Text) Service
-  , persistentVolumeClaims :: HashMap (Text, Text) PersistentVolumeClaim
+    pods                   :: ResourceMap Pod
+  , secrets                :: ResourceMap Secret
+  , services               :: ResourceMap Service
+  , persistentVolumeClaims :: ResourceMap PersistentVolumeClaim
   , elapsed                :: Elapsed
   , events                 :: HashMap Elapsed [KubeState -> KubeState]
   , images                 :: HashSet Text

@@ -20,9 +20,9 @@ import           Kubernetes.Model.Unversioned.Status (Status)
 import           Kubernetes.Model.V1.DeleteOptions   (mkDeleteOptions)
 import           Kubernetes.Model.V1.ObjectMeta      (ObjectMeta)
 import qualified Kubernetes.Model.V1.ObjectMeta      as ObjectMeta
-import           Kubernetes.Model.V1.Secret          (Secret)
+import           Kubernetes.Model.V1.Secret          (Secret, mkSecret)
 import qualified Kubernetes.Model.V1.Secret          as Secret
-import           Kubernetes.Model.V1.SecretList      (SecretList)
+import           Kubernetes.Model.V1.SecretList      (SecretList, mkSecretList)
 import qualified Kubernetes.Model.V1.SecretList      as SecretList
 
 import           Kubernetes.Api.ApivApi              (createNamespacedPod,
@@ -41,18 +41,18 @@ import           Servant.Client
 
 import           Data.Aeson
 import           Data.ByteString.Lazy                (toStrict)
-import           Data.HashMap.Strict                 as HashMap
+import qualified Data.HashMap.Strict                 as HashMap
 import           Data.Semigroup
 import           Data.Text                           (Text)
 import qualified Data.Text                           as Text
 import           Data.Text.Encoding                  (decodeUtf8)
-
 
 import           Control.Monad.Stub.StubMonad
 import           Control.Monad.Stub.Time
 import           Control.Monad.Stub.Wait
 import           Control.Monad.Time
 import           Control.Monad.Wait
+import           CPI.Kubernetes.Resource.Stub.State
 import           Data.HashMap.Strict                 (HashMap, insert)
 import           Data.Hourglass.Types
 
@@ -65,18 +65,22 @@ instance (MonadThrow m, MonadWait m, Monoid w, HasSecrets s, HasWaitCount w, Has
     State.modify $ updateSecrets secrets'
     pure secret
 
-  listSecret namespace = do
-    kube <- State.get
-    pure undefined
+  listSecret namespace maybeSelector = do
+    secrets <- State.gets asSecrets
+    let bySelector = case maybeSelector of
+          Just selector -> let [key, value] = Text.splitOn "=" selector
+                             in
+                               (\s -> (s ^. label key) == value)
+          Nothing -> const True
+    pure $ mkSecretList $ filter bySelector $ HashMap.elems secrets
 
   getSecret namespace name = do
     secrets <- State.gets asSecrets
     pure $ (namespace, name) `HashMap.lookup` secrets
 
-  updateSecret namespace pod = do
-    kube <- State.get
-    State.put undefined
-    pure undefined
+  updateSecret namespace secret = do
+    State.modify $ withSecrets (\secrets -> HashMap.adjust (const secret) (namespace, secret ^. name) secrets)
+    pure $ secret
 
   deleteSecret namespace name = do
     timestamp <- currentTime

@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes    #-}
 {-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE OverloadedStrings      #-}
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
@@ -25,7 +26,8 @@ import           CPI.Kubernetes.Resource.Metadata
 import           CPI.Kubernetes.Resource.Secret         (MonadSecret,
                                                          createSecret,
                                                          deleteSecret,
-                                                         getSecret, newSecret,
+                                                         getSecret, listSecret,
+                                                         newSecret,
                                                          waitForSecret)
 import qualified CPI.Kubernetes.Resource.Secret         as Secret
 import           CPI.Kubernetes.Resource.Stub.Pod
@@ -72,27 +74,63 @@ import           Network.HTTP.Types.Status
 import           Servant.Common.Req                     (ServantError (..))
 import           System.Environment
 
+
+withSecret :: (MonadSecret m, MonadThrow m, MonadMask m, HasConfig c, MonadReader c m) => Secret -> m a -> m a
+withSecret secret action =
+  bracket
+    (do
+      config <- asks asConfig
+      let ns = namespace $ clusterAccess config
+      createdSecret <- createSecret ns secret
+      pure (secret, createdSecret))
+    (\_ -> do
+      config <- asks asConfig
+      let ns = namespace $ clusterAccess config
+      deleteSecret ns $ secret ^. name)
+    (\(secret, createdSecret) -> do
+      action
+      )
+
 spec :: Spec
-spec =
-  describe "create" $ do
-    let secret = newSecret "test"
+spec = describe "Secret" $ do
+  let newTestSecret name = newSecret name
+      testSecret = newTestSecret "test-secret"
+  describe "createSecret" $ do
     it "creates a secret with the given name" $ do
       void $ run emptyStubConfig emptyKube $ do
         config <- asks asConfig
         let ns = namespace $ clusterAccess config
         bracket
           (do
-            createdSecret <- createSecret ns secret
-            pure (secret, createdSecret))
+            createdSecret <- createSecret ns $ testSecret
+            pure (testSecret, createdSecret))
           (\_ -> do
-            deleteSecret ns "test")
+            deleteSecret ns "test-secret")
           (\(secret, createdSecret) -> do
             let createdSecretName = createdSecret ^. Secret.metadata._Just.ObjectMeta.name._Just
-            lift $ createdSecretName `shouldBe` "test"
-            secret' <- getSecret ns "test"
+            lift $ createdSecretName `shouldBe` "test-secret"
+            secret' <- getSecret ns "test-secret"
             lift $ secret' `shouldSatisfy` isJust
-            lift $ (secret ^. name) `shouldBe` (createdSecret ^. name)
+            lift $ (secret' ^. _Just.name) `shouldBe` (createdSecret ^. name)
             )
+  describe "listSecret" $ do
+    it "returns the list of secrets" $ do
+      void $ run emptyStubConfig emptyKube $ do
+        config <- asks asConfig
+        let ns = namespace $ clusterAccess config
+        withSecret testSecret $ do
+          secrets <- listSecret ns Nothing
+          lift $ secrets ^.. Secret.secrets.each.name `shouldBe` ["test-secret"]
+    context "when a selector is given" $ do
+      let testSecretWithLabel = newTestSecret "test-secret-with-label" & label "select" .~ "match"
+      it "returns the list of secrets matching the selector" $ do
+        void $ run emptyStubConfig emptyKube $ do
+          config <- asks asConfig
+          let ns = namespace $ clusterAccess config
+          withSecret testSecret $ do
+            withSecret testSecretWithLabel $ do
+              secrets <- listSecret ns $ Just "select=match"
+              lift $ secrets ^.. Secret.secrets.each.name `shouldBe` ["test-secret-with-label"]
 
 servantErrorWithStatusCode :: Int -> Selector ServantError
 servantErrorWithStatusCode expectedStatusCode (FailureResponse (Status code _) _ _) = expectedStatusCode == code

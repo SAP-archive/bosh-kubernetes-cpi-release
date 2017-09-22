@@ -2,14 +2,33 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module CPI.Kubernetes.Action.CreateDisk(
-  createDisk
+module CPI.Kubernetes.Action.AttachDisk(
+  attachDisk
 ) where
 
 import qualified CPI.Base                                      as Base
+import           CPI.Kubernetes.Action.Common
+
+
 import           CPI.Kubernetes.Config
-import qualified CPI.Kubernetes.Resource.Metadata              as Metadata
-import           CPI.Kubernetes.Resource.PersistentVolumeClaim
+import           CPI.Kubernetes.Resource.Metadata              as Metadata
+import           CPI.Kubernetes.Resource.PersistentVolumeClaim (MonadPVC, getPersistentVolumeClaim,
+                                                                updatePersistentVolumeClaim)
+import qualified CPI.Kubernetes.Resource.PersistentVolumeClaim as Service
+import           CPI.Kubernetes.Resource.Pod                   (MonadPod,
+                                                                createPod,
+                                                                deletePod,
+                                                                getPod,
+                                                                newPodFrom,
+                                                                waitForPod)
+import qualified CPI.Kubernetes.Resource.Pod                   as Pod
+import           CPI.Kubernetes.Resource.Secret                (MonadSecret,
+                                                                createSecret,
+                                                                data',
+                                                                getSecret,
+                                                                newSecret,
+                                                                updateSecret)
+import qualified CPI.Kubernetes.Resource.Secret                as Secret
 import qualified CPI.Kubernetes.VmTypes                        as VmTypes
 import           Resource
 
@@ -61,6 +80,7 @@ import qualified CPI.Kubernetes.Base64                         as Base64
 import           Data.ByteString.Lazy                          (toStrict)
 import           Data.HashMap.Strict                           (HashMap)
 import qualified Data.HashMap.Strict                           as HashMap
+import           Data.Maybe
 import           Data.Text                                     (Text)
 import qualified Data.Text                                     as Text
 import           Data.Text.Encoding
@@ -77,26 +97,43 @@ import           Control.Monad.FileSystem
 import           Data.Aeson
 import qualified Data.Aeson                                    as Aeson
 
-createDisk ::
+attachDisk ::
     (  HasConfig c
      , MonadReader c m
      , MonadLog (WithSeverity Text) m
      , MonadFileSystem m
-     , MonadPVC m) =>
-     Integer
-  -> Base.DiskProperties
-  -> Base.VmId
-  -> m Base.DiskId
-createDisk size cloudProperties (Base.VmId vmId) = do
-  logDebug $ "Create Disk for agent '" <> vmId <> "'"
+     , MonadPod m
+     , MonadPVC m
+     , MonadSecret m) =>
+     Base.VmId
+  -> Base.DiskId
+  -> m ()
+attachDisk vmId diskId = do
+  logDebug $ "Attaching disk '" <> Unwrapped diskId <> "' to VM '" <> Unwrapped diskId <> "'"
   config <- asks asConfig
-  let ns = config & clusterAccess & namespace
-      pvSize s = (Text.pack.show) s <> "Mi"
-  pvc <- createPersistentVolumeClaim ns $
-            newPersistentVolumeClaim "bosh-disk-" (pvSize size)
-  boundPVC <- waitForPersistentVolumeClaim
-                "PVC to be bound"
-                ns
-                (pvc ^. Metadata.name)
-                (\pvc -> pvc ^. _Just.status.phase._Just == "Bound")
-  pure $ Base.DiskId $ pvc ^. Metadata.name
+  let ns = namespace $ clusterAccess config
+      expectJust :: (MonadThrow m) => Text -> Text -> m (Maybe a) -> m a
+      expectJust prefix name action = do
+        let message = prefix <> " '" <> name <> "' does not exist"
+        maybeValue <- action
+        maybe (throwM $ Base.CloudError message) (pure) maybeValue
+      expectPod name action = expectJust "Pod" name action
+      expectDisk name action = expectJust "PersistentVolumeClaim" name action
+      expectSecret name action = expectJust "Secret" name action
+  pod <- expectPod (Unwrapped vmId) (getPod ns $ Unwrapped vmId)
+  expectDisk (Unwrapped diskId) (getPersistentVolumeClaim ns (Unwrapped diskId))
+  secret <- expectSecret ("agent-settings-" <> Unwrapped vmId) (getSecret ns $ "agent-settings-" <> (Unwrapped vmId))
+  deletePod ns $ Unwrapped vmId
+  waitForPod "Pod to be deleted" ns (Unwrapped vmId) isNothing
+  oldSettings <- Base64.decodeJSON $ secret ^. Secret.data'.at "config.json"._Just._String
+  let newSettings = Base.addPersistentDisk oldSettings (Unwrapped diskId) $ "/var/vcap/bosh/disks/" <> (Unwrapped diskId)
+      encodedSettings = Base64.encodeJSON newSettings
+      secret' = secret & Secret.data'.at "config.json"._Just._String
+              .~ encodedSettings
+  updateSecret ns secret'
+  let volume = Pod.newPersistentVolume "persistent-disk" (Unwrapped diskId)
+      volumeMount = Pod.newVolumeMount "persistent-disk" ("/var/vcap/bosh/disks/" <> (Unwrapped diskId)) False
+      pod' = (newPodFrom pod) & Pod.volumes %~ (\volumes -> volumes |> volume)
+                              & Pod.volumeMounts %~ (\mounts -> mounts |> volumeMount)
+  createPod ns $ pod'
+  void $ waitForPod "Pod to be running" ns (Unwrapped vmId) (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")

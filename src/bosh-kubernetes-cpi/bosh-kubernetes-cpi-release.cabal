@@ -1,156 +1,163 @@
-name:                bosh-kubernetes-cpi-release
-version:             0.0.1.0
-synopsis:            A BOSH Cloud Provider Interface for Kubernetes
-description:         Please see README.md
-homepage:            https://github.com/SAP/bosh-kubernetes-cpi-release#readme
-license:             Apache
--- license-file:        LICENSE
-author:              Jan von Löwenstein
-maintainer:          jan.von.loewenstein@sap.com
-copyright:           2016 SAP SE
-category:            Cloud
-build-type:          Simple
--- extra-source-files:
-cabal-version:       >=1.10
-
-library
-  -- ghc-options:        -Wall
-  default-extensions:  OverloadedStrings
-  hs-source-dirs:      src
-  exposed-modules:     CPI.Kubernetes
-                     , CPI.Kubernetes.Base64
-                     , CPI.Kubernetes.Http
-                     , CPI.Kubernetes.Config
-                     , CPI.Kubernetes.Model
-                     , CPI.Kubernetes.Networks
-                     , CPI.Kubernetes.VmTypes
-                     , CPI.Kubernetes.Secrets
-                     , CPI.Kubernetes.Action.Common
-                     , CPI.Kubernetes.Action.CreateVm
-                     , CPI.Kubernetes.Action.DeleteVm
-                     , CPI.Kubernetes.Action.CreateDisk
-                     , CPI.Kubernetes.Action.DeleteDisk
-                     , Resource
-                     , CPI.Kubernetes.Resource.Servant
-                     , CPI.Kubernetes.Resource.Pod
-                     , CPI.Kubernetes.Resource.Secret
-                     , CPI.Kubernetes.Resource.Service
-                     , CPI.Kubernetes.Resource.PersistentVolumeClaim
-                     , CPI.Kubernetes.Resource.Metadata
-                     , CPI.Kubernetes.Resource.Stub.State
-                     , CPI.Kubernetes.Resource.Stub.Pod
-                     , CPI.Kubernetes.Resource.Stub.Secret
-                     , CPI.Kubernetes.Resource.Stub.Service
-                     , CPI.Kubernetes.Resource.Stub.PersistentVolumeClaim
-  build-depends:       base >= 4.7 && < 5
-                     , bosh-cpi-haskell
-                     , mtl
-                     , transformers
-                     , hourglass
-                     , aeson
-                     , lens-aeson
-                     , yaml
-                     , text
-                     , bytestring
-                     , base64-bytestring
-                     , containers
-                     , unordered-containers
-                     , exceptions
-                     , safe-exceptions
-                     , haskell-kubernetes
-                     , servant
-                     , servant-client
-                     , http-types
-                     , http-client
-                     , http-client-tls
-                     , tls
-                     , connection
-                     , x509
-                     , data-default-class
-                     , lens
-                     , logging-effect
-                     , wl-pprint-text
-                     , random
-  default-language:    Haskell2010
-
-executable bosh-kubernetes-cpi
-  hs-source-dirs:      app/cpi
-  main-is:             Main.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  build-depends:       base
-                     , bosh-kubernetes-cpi-release
-                     , bosh-cpi-haskell
-  default-language:    Haskell2010
-
-test-suite unit
-  type:                exitcode-stdio-1.0
-  default-extensions:  OverloadedStrings
-                     , ScopedTypeVariables
-  hs-source-dirs:      test/unit
-  main-is:             Spec.hs
-  other-modules:       CPI.Kubernetes.Base64Spec
-                     , CPI.Kubernetes.VmTypesSpec
-                     , CPI.Kubernetes.ConfigSpec
-                     , CPI.Kubernetes.Action.DeleteVmSpec
-                     , CPI.Kubernetes.Action.CreateVmSpec
-                     , CPI.Kubernetes.Action.CreateDiskSpec
-                     , CPI.Kubernetes.Action.DeleteDiskSpec
-  build-depends:       base
-                     , hspec
-                     , QuickCheck
-                     , quickcheck-instances
-                     , aeson-qq
-                     , lens-aeson
-                     , raw-strings-qq
-                     , safe-exceptions
-                     , bosh-cpi-haskell
-                     , haskell-kubernetes
-                     , bosh-kubernetes-cpi-release
-                     , servant-client
-                     , bytestring
-                     , base64-bytestring
-                     , aeson
-                     , lens
-                     , text
-                     , mtl
-                     , transformers
-                     , unordered-containers
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  default-language:    Haskell2010
-
-test-suite stub
-  type:                exitcode-stdio-1.0
-  default-extensions:  OverloadedStrings
-  hs-source-dirs:      test/stub
-  main-is:             Spec.hs
-  other-modules:       PodSpec
-                     , SecretSpec
-                     , ServiceSpec
-                     , PersistentVolumeClaimSpec
-                     , StubRunner
-  build-depends:       base
-                     , hspec
-                     , http-types
-                     , aeson-qq
-                     , lens-aeson
-                     , yaml
-                     , raw-strings-qq
-                     , safe-exceptions
-                     , bosh-cpi-haskell
-                     , bosh-kubernetes-cpi-release
-                     , servant-client
-                     , bytestring
-                     , aeson
-                     , lens
-                     , text
-                     , mtl
-                     , transformers
-                     , unordered-containers
-                     , tls
-                     , haskell-kubernetes
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
-  default-language:    Haskell2010
+name: bosh-kubernetes-cpi-release
+version: 0.0.1.0
+cabal-version: >=1.10
+build-type: Simple
+license: Apache
+copyright: 2016 SAP SE
+maintainer: jan.von.loewenstein@sap.com
+homepage: https://github.com/SAP/bosh-kubernetes-cpi-release#readme
+synopsis: A BOSH Cloud Provider Interface for Kubernetes
+description:
+    Please see README.md
+category: Cloud
+author: Jan von Löwenstein
 
 source-repository head
-  type:     git
-  location: https://github.com/SAP/bosh-kubernetes-cpi-release
+    type: git
+    location: https://github.com/SAP/bosh-kubernetes-cpi-release
+
+library
+    exposed-modules:
+        CPI.Kubernetes
+        CPI.Kubernetes.Base64
+        CPI.Kubernetes.Http
+        CPI.Kubernetes.Config
+        CPI.Kubernetes.Model
+        CPI.Kubernetes.Networks
+        CPI.Kubernetes.VmTypes
+        CPI.Kubernetes.Secrets
+        CPI.Kubernetes.Action.Common
+        CPI.Kubernetes.Action.CreateVm
+        CPI.Kubernetes.Action.DeleteVm
+        CPI.Kubernetes.Action.CreateDisk
+        CPI.Kubernetes.Action.DeleteDisk
+        CPI.Kubernetes.Action.AttachDisk
+        Resource
+        CPI.Kubernetes.Resource.Servant
+        CPI.Kubernetes.Resource.Pod
+        CPI.Kubernetes.Resource.Secret
+        CPI.Kubernetes.Resource.Service
+        CPI.Kubernetes.Resource.PersistentVolumeClaim
+        CPI.Kubernetes.Resource.Metadata
+        CPI.Kubernetes.Resource.Stub.State
+        CPI.Kubernetes.Resource.Stub.Pod
+        CPI.Kubernetes.Resource.Stub.Secret
+        CPI.Kubernetes.Resource.Stub.Service
+        CPI.Kubernetes.Resource.Stub.PersistentVolumeClaim
+    build-depends:
+        base >=4.7 && <5,
+        bosh-cpi-haskell -any,
+        mtl -any,
+        transformers -any,
+        hourglass -any,
+        aeson -any,
+        lens-aeson -any,
+        yaml -any,
+        text -any,
+        bytestring -any,
+        base64-bytestring -any,
+        containers -any,
+        unordered-containers -any,
+        exceptions -any,
+        safe-exceptions -any,
+        haskell-kubernetes -any,
+        servant -any,
+        servant-client -any,
+        http-types -any,
+        http-client -any,
+        http-client-tls -any,
+        tls -any,
+        connection -any,
+        x509 -any,
+        data-default-class -any,
+        lens -any,
+        logging-effect -any,
+        wl-pprint-text -any,
+        random -any
+    default-language: Haskell2010
+    default-extensions: OverloadedStrings
+    hs-source-dirs: src
+
+executable bosh-kubernetes-cpi
+    main-is: Main.hs
+    build-depends:
+        base -any,
+        bosh-kubernetes-cpi-release -any,
+        bosh-cpi-haskell -any
+    default-language: Haskell2010
+    hs-source-dirs: app/cpi
+    ghc-options: -threaded -rtsopts -with-rtsopts=-N
+
+test-suite unit
+    type: exitcode-stdio-1.0
+    main-is: Spec.hs
+    build-depends:
+        base -any,
+        hspec -any,
+        QuickCheck -any,
+        quickcheck-instances -any,
+        aeson-qq -any,
+        lens-aeson -any,
+        raw-strings-qq -any,
+        safe-exceptions -any,
+        bosh-cpi-haskell -any,
+        haskell-kubernetes -any,
+        bosh-kubernetes-cpi-release -any,
+        servant-client -any,
+        bytestring -any,
+        base64-bytestring -any,
+        aeson -any,
+        lens -any,
+        text -any,
+        mtl -any,
+        transformers -any,
+        unordered-containers -any
+    default-language: Haskell2010
+    default-extensions: OverloadedStrings ScopedTypeVariables
+    hs-source-dirs: test/unit
+    other-modules:
+        CPI.Kubernetes.Base64Spec
+        CPI.Kubernetes.VmTypesSpec
+        CPI.Kubernetes.ConfigSpec
+        CPI.Kubernetes.Resource.PodSpec
+        CPI.Kubernetes.Action.CommonSpec
+        CPI.Kubernetes.Action.DeleteVmSpec
+        CPI.Kubernetes.Action.CreateVmSpec
+        CPI.Kubernetes.Action.CreateDiskSpec
+        CPI.Kubernetes.Action.DeleteDiskSpec
+        CPI.Kubernetes.Action.AttachDiskSpec
+    ghc-options: -threaded -rtsopts -with-rtsopts=-N
+test-suite stub
+    type: exitcode-stdio-1.0
+    main-is: Spec.hs
+    build-depends:
+        base -any,
+        hspec -any,
+        http-types -any,
+        aeson-qq -any,
+        lens-aeson -any,
+        yaml -any,
+        raw-strings-qq -any,
+        safe-exceptions -any,
+        bosh-cpi-haskell -any,
+        bosh-kubernetes-cpi-release -any,
+        servant-client -any,
+        bytestring -any,
+        aeson -any,
+        lens -any,
+        text -any,
+        mtl -any,
+        transformers -any,
+        unordered-containers -any,
+        tls -any,
+        haskell-kubernetes -any
+    default-language: Haskell2010
+    default-extensions: OverloadedStrings
+    hs-source-dirs: test/stub
+    other-modules:
+        PodSpec
+        SecretSpec
+        ServiceSpec
+        PersistentVolumeClaimSpec
+        StubRunner
+    ghc-options: -threaded -rtsopts -with-rtsopts=-N

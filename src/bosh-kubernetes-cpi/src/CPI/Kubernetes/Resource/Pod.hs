@@ -8,45 +8,60 @@ module CPI.Kubernetes.Resource.Pod(
     module Pod
   , MonadPod(..)
   , newPod
+  , newPodFrom
   , newContainer
   , container
   , volumes
+  , volumeMounts
+  , newPersistentVolume
+  , newVolumeMount
   , image
   , status
   , phase
 ) where
 
-import qualified CPI.Base                          as Base
-import           CPI.Base.Errors                   (CloudError (..))
+import qualified CPI.Base                                              as Base
+import           CPI.Base.Errors                                       (CloudError (..))
 import           CPI.Kubernetes.Config
+import           CPI.Kubernetes.Resource.Metadata
 import           CPI.Kubernetes.Resource.Servant
 import           Resource
 
-import qualified Kubernetes.Model.V1.Any           as Any
-import           Kubernetes.Model.V1.Container     (Container, mkContainer)
-import qualified Kubernetes.Model.V1.Container     as Container
-import           Kubernetes.Model.V1.DeleteOptions (mkDeleteOptions)
-import           Kubernetes.Model.V1.ObjectMeta    (ObjectMeta, mkObjectMeta)
-import qualified Kubernetes.Model.V1.ObjectMeta    as ObjectMeta
-import           Kubernetes.Model.V1.Pod           (Pod, mkPod)
-import qualified Kubernetes.Model.V1.Pod           as Pod
-import           Kubernetes.Model.V1.PodList       (PodList)
-import qualified Kubernetes.Model.V1.PodList       as PodList
-import           Kubernetes.Model.V1.PodSpec       (PodSpec, mkPodSpec)
-import qualified Kubernetes.Model.V1.PodSpec       as PodSpec
-import           Kubernetes.Model.V1.PodStatus     (PodStatus, mkPodStatus)
-import qualified Kubernetes.Model.V1.PodStatus     as PodStatus
-import           Kubernetes.Model.V1.Volume        (Volume, mkVolume)
-import qualified Kubernetes.Model.V1.Volume        as Volume
+import qualified Kubernetes.Model.V1.Any                               as Any
+import           Kubernetes.Model.V1.Container                         (Container,
+                                                                        mkContainer)
+import qualified Kubernetes.Model.V1.Container                         as Container
+import           Kubernetes.Model.V1.DeleteOptions                     (mkDeleteOptions)
+import           Kubernetes.Model.V1.ObjectMeta                        (ObjectMeta,
+                                                                        mkObjectMeta)
+import qualified Kubernetes.Model.V1.ObjectMeta                        as ObjectMeta
+import           Kubernetes.Model.V1.PersistentVolumeClaimVolumeSource (PersistentVolumeClaimVolumeSource,
+                                                                        mkPersistentVolumeClaimVolumeSource)
+import qualified Kubernetes.Model.V1.PersistentVolumeClaimVolumeSource as PersistentVolumeClaimVolumeSource
+import           Kubernetes.Model.V1.Pod                               (Pod,
+                                                                        mkPod)
+import qualified Kubernetes.Model.V1.Pod                               as Pod
+import           Kubernetes.Model.V1.PodList                           (PodList)
+import qualified Kubernetes.Model.V1.PodList                           as PodList
+import           Kubernetes.Model.V1.PodSpec                           (PodSpec, mkPodSpec)
+import qualified Kubernetes.Model.V1.PodSpec                           as PodSpec
+import           Kubernetes.Model.V1.PodStatus                         (PodStatus,
+                                                                        mkPodStatus)
+import qualified Kubernetes.Model.V1.PodStatus                         as PodStatus
+import           Kubernetes.Model.V1.Volume                            (Volume,
+                                                                        mkVolume)
+import qualified Kubernetes.Model.V1.Volume                            as Volume
+import           Kubernetes.Model.V1.VolumeMount                       (VolumeMount)
+import qualified Kubernetes.Model.V1.VolumeMount                       as VolumeMount
 
-import           Kubernetes.Api.ApivApi            (createNamespacedPod,
-                                                    deleteNamespacedPod,
-                                                    listNamespacedPod,
-                                                    readNamespacedPod,
-                                                    replaceNamespacedPod)
+import           Kubernetes.Api.ApivApi                                (createNamespacedPod,
+                                                                        deleteNamespacedPod,
+                                                                        listNamespacedPod,
+                                                                        readNamespacedPod,
+                                                                        replaceNamespacedPod)
 
 import           Control.Monad.Reader
-import qualified Control.Monad.State               as State
+import qualified Control.Monad.State                                   as State
 import           Data.Maybe
 
 import           Control.Exception.Safe
@@ -58,12 +73,12 @@ import           Control.Monad.Log
 import           Control.Monad.Wait
 
 import           Data.Aeson
-import           Data.ByteString.Lazy              (toStrict)
+import           Data.ByteString.Lazy                                  (toStrict)
 import           Data.Hourglass
 import           Data.Semigroup
-import           Data.Text                         (Text)
-import qualified Data.Text                         as Text
-import           Data.Text.Encoding                (decodeUtf8)
+import           Data.Text                                             (Text)
+import qualified Data.Text                                             as Text
+import           Data.Text.Encoding                                    (decodeUtf8)
 import           Servant.Client
 
 class (Monad m) => MonadPod m where
@@ -107,6 +122,11 @@ newPod name container =
         & ObjectMeta.name .~ Just name
     spec = mkPodSpec [container]
 
+newPodFrom :: Pod -> Pod
+newPodFrom pod =
+  mkPod & name     .~ pod ^. name
+        & Pod.spec .~ pod ^. Pod.spec
+
 newContainer :: Text -> Text -> Container
 newContainer name imageId =
   mkContainer name & Container.image ?~ imageId
@@ -119,6 +139,19 @@ container = spec.PodSpec.containers.ix 0
 
 volumes :: Traversal' Pod [Volume]
 volumes = spec.PodSpec.volumes.non []
+
+volumeMounts :: Traversal' Pod [VolumeMount]
+volumeMounts = container.Container.volumeMounts.non []
+
+newPersistentVolume :: Text -> Text -> Volume.Volume
+newPersistentVolume volumeName claimName = Volume.mkVolume volumeName
+  & Volume.persistentVolumeClaim .~ Just (PersistentVolumeClaimVolumeSource.mkPersistentVolumeClaimVolumeSource claimName)
+
+newVolumeMount :: Text -> Text -> Bool -> VolumeMount.VolumeMount
+newVolumeMount name path readOnly = let
+  maybeReadOnly = if readOnly then Just True else Nothing
+  in VolumeMount.mkVolumeMount name path
+                  & VolumeMount.readOnly .~ maybeReadOnly
 
 image :: Traversal' Container Text
 image = Container.image._Just

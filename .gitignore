@@ -1,3 +1,4 @@
+deployments/*
 stemcell/build/*
 config/private.yml
 .stack-work

@@ -35,6 +35,7 @@ import           Kubernetes.Api.ApivApi                 (createNamespacedPod,
                                                          readNamespacedPod,
                                                          replaceNamespacedPod)
 
+import qualified Data.ByteString.Lazy.Char8             as ByteString
 import           Data.HashMap.Strict                    (HashMap)
 import qualified Data.HashMap.Strict                    as HashMap
 import           Data.HashSet                           (HashSet)
@@ -43,6 +44,7 @@ import           Data.Hourglass
 import           Data.Maybe
 import           Data.Monoid
 import           Data.Text                              (Text)
+import qualified Data.Text                              as Text
 
 import           Control.Exception.Safe
 import           Control.Lens
@@ -76,9 +78,12 @@ instance (MonadThrow m, Monoid w, HasPods s, HasSecrets s, HasImages s, HasWaitC
     pods <- State.gets asPods
     if isJust $ HashMap.lookup (namespace, podName) pods
       then throwM FailureResponse {
-        responseStatus = Status {
-            statusCode = 409
-        }
+          responseStatus = Status {
+              statusCode = 409
+            , statusMessage = "Conflict"
+          }
+        , responseContentType = "text/plain"
+        , responseBody = "Pod with name '" <> ((ByteString.pack . Text.unpack) podName) <> "' already exists"
       }
       else pure ()
     let defaultServiceAccount :: Pod -> Pod

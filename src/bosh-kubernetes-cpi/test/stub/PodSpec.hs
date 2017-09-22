@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes    #-}
 {-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE OverloadedStrings      #-}
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
@@ -23,6 +24,7 @@ import           Data.Maybe
 
 import qualified CPI.Base                               as Base
 import           CPI.Kubernetes.Config
+
 import           CPI.Kubernetes.Resource.Metadata
 import qualified CPI.Kubernetes.Resource.Metadata       as Metadata
 import           CPI.Kubernetes.Resource.Pod            (MonadPod, createPod,
@@ -33,7 +35,10 @@ import qualified CPI.Kubernetes.Resource.Pod            as Pod
 import           CPI.Kubernetes.Resource.Secret
 import           CPI.Kubernetes.Resource.Stub.Pod
 import           CPI.Kubernetes.Resource.Stub.Secret
-import           CPI.Kubernetes.Resource.Stub.State
+import           CPI.Kubernetes.Resource.Stub.State     (emptyKube,
+                                                         emptyStubConfig)
+import qualified CPI.Kubernetes.Resource.Stub.State     as State
+
 import           Kubernetes.Model.V1.Container          (Container, mkContainer)
 import qualified Kubernetes.Model.V1.Container          as Container
 import           Kubernetes.Model.V1.ObjectMeta         (ObjectMeta,
@@ -55,21 +60,21 @@ import qualified Kubernetes.Model.V1.Volume             as Volume
 import           Kubernetes.Model.V1.VolumeMount        (VolumeMount,
                                                          mkVolumeMount)
 import qualified Kubernetes.Model.V1.VolumeMount        as VolumeMount
-import           Network.TLS
-import           Resource
-import           Servant.Common.BaseUrl                 (BaseUrl, parseBaseUrl)
-
 
 import qualified Data.HashMap.Strict                    as HashMap
 import qualified Data.HashSet                           as HashSet
 import           Data.Text                              (Text)
 import qualified Data.Text                              as Text
+import           Network.TLS
+import           Resource
+import           Servant.Common.BaseUrl                 (BaseUrl, parseBaseUrl)
 
 import           Control.Exception.Safe
-import Control.Monad.Reader
 import           Control.Monad.FileSystem
+import           Control.Monad.Reader
 import           Control.Monad.Stub.StubMonad
 import           Control.Monad.Wait
+
 import           Data.Typeable
 import           GHC.Stack.Types
 import           Network.HTTP.Types.Status
@@ -141,8 +146,8 @@ spec =
       void $ run
               emptyStubConfig
               emptyKube {
-                  images = HashSet.singleton "busybox"
-                , secrets = HashMap.singleton ("default", "default-token") (newSecret "default-token")
+                  State.images = HashSet.singleton "busybox"
+                , State.secrets = HashMap.singleton ("default", "default-token") (newSecret "default-token")
               } $ do
         withPod pod $ do
           (\pod' -> do
@@ -162,8 +167,8 @@ spec =
         void $ run
                 emptyStubConfig
                 emptyKube {
-                    images = HashSet.singleton "busybox"
-                  , secrets = HashMap.singleton ("default", "default-token") (newSecret "default-token")
+                    State.images = HashSet.singleton "busybox"
+                  , State.secrets = HashMap.singleton ("default", "default-token") (newSecret "default-token")
                 } $ do
             withPod pod $ do
               (\pod' -> do
