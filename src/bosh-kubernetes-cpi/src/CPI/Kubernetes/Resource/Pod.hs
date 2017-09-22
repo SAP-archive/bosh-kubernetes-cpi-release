@@ -125,6 +125,7 @@ newPod name container =
 newPodFrom :: Pod -> Pod
 newPodFrom pod =
   mkPod & name     .~ pod ^. name
+        & labels   .~ pod ^. labels
         & Pod.spec .~ pod ^. Pod.spec
 
 newContainer :: Text -> Text -> Container

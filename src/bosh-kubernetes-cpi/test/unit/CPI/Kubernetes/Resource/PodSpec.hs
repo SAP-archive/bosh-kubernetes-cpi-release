@@ -9,6 +9,8 @@ import           CPI.Kubernetes.Resource.Pod
 import qualified CPI.Kubernetes.Resource.Pod      as Pod
 import qualified Kubernetes.Model.V1.Pod          as Pod
 
+import qualified Data.HashMap.Strict              as HashMap
+
 spec :: Spec
 spec = describe "Pod" $ do
          describe "copyPod" $ do
@@ -18,7 +20,13 @@ spec = describe "Pod" $ do
              let pod' = newPodFrom pod
 
              pod' ^. name `shouldBe` (pod ^. name)
+           it "copies metadata.labels" $ do
+             let pod = (newPod "pod-name" $ newContainer "container-name" "repo/image")
+                                         & labels .~ HashMap.singleton "key" "value"
 
+             let pod' = newPodFrom pod
+
+             pod' ^. labels `shouldBe` (pod ^. labels)
            it "copies spec" $ do
              let pod = newPod "pod-name" $ newContainer "container-name" "repo/image"
 
