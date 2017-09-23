@@ -88,7 +88,10 @@ createDisk ::
   -> Base.VmId
   -> m Base.DiskId
 createDisk size cloudProperties (Base.VmId vmId) = do
-  logDebug $ "Create Disk for agent '" <> vmId <> "'"
+  logDebug $
+       "Creating disk with size '" <> Text.pack (show size)
+    <> "', properties '" <> Text.pack (show cloudProperties)
+    <> "' for VM '" <> vmId <> "'"
   config <- asks asConfig
   let ns = config & clusterAccess & namespace
       pvSize s = (Text.pack.show) s <> "Mi"

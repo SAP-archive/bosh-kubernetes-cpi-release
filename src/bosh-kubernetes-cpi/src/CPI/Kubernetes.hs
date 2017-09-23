@@ -98,7 +98,6 @@ instance Base.MonadCpi Config IO where
     -> Base.Environment
     -> Base.Cpi Config IO Base.VmId
   createVm agentId stemcell cloudProperties networkSpec diskLocality env = do
-    logDebug $ "Create VM for agent '" <> Unwrapped agentId <> "'"
     config <- ask
     config `runResource` CreateVm.createVm agentId stemcell cloudProperties networkSpec diskLocality env
 
@@ -109,7 +108,6 @@ instance Base.MonadCpi Config IO where
   deleteVm :: Base.VmId
           -> Base.Cpi Config IO ()
   deleteVm vmId = do
-    logDebug $ "Delete VM with id '" <> Unwrapped vmId <> "'"
     config <- ask
     config `runResource` DeleteVm.deleteVm vmId
 
@@ -118,10 +116,6 @@ instance Base.MonadCpi Config IO where
     -> Base.VmId
     -> Base.Cpi Config IO Base.DiskId
   createDisk size properties vmId = do
-    logDebug $
-         "Creating disk with size '" <> Text.pack (show size)
-      <> "', properties '" <> Text.pack (show properties)
-      <> "' for VM '" <> (Unwrapped vmId) <> "'"
     config <- ask
     config `runResource` CreateDisk.createDisk size properties vmId
 
@@ -132,7 +126,6 @@ instance Base.MonadCpi Config IO where
   deleteDisk :: Base.DiskId
           -> Base.Cpi Config IO ()
   deleteDisk diskId = do
-    logDebug $ "Delete disk '" <> Text.pack (show (Unwrapped diskId)) <> "'"
     exists <- hasPersistentVolumeClaim (Unwrapped diskId)
     config <- ask
     when exists $ void $ config `runResource` DeleteDisk.deleteDisk diskId
