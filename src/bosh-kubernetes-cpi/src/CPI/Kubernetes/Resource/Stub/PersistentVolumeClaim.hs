@@ -84,12 +84,14 @@ instance (MonadIO m, MonadThrow m, Monoid w, HasPVCs s, HasWaitCount w, HasTime 
     State.modify $ withTimeline
                  (\events ->
                    let runningConditions = All True
+                       bound :: s -> s
+                       bound = withPVCs $ HashMap.adjust (status.phase ?~ "Bound") (namespace, pvcName)
+                       after :: GHC.Int64 -> Elapsed
+                       after n = timestamp + (Elapsed $ Seconds n)
                      in
                        if getAll runningConditions
                          then
-                           HashMap.insert (timestamp + (Elapsed $ Seconds 1))
-                           [withPVCs $ HashMap.adjust (status.phase ?~ "Bound") (namespace, pvcName)]
-                           events
+                           events & at (after 1).anon [] (const False) %~ (\events -> events |> bound)
                          else
                            events)
     pure pvc'
@@ -112,14 +114,15 @@ instance (MonadIO m, MonadThrow m, Monoid w, HasPVCs s, HasWaitCount w, HasTime 
     State.modify $ withTimeline
                  (\events -> --events)
                    let
-                     terminating :: [s -> s]
-                     terminating = [withPVCs $ HashMap.adjust (\pod -> pod & status.phase ?~ "Terminating") (namespace, name)]
-                     deleted :: [s -> s]
-                     deleted = [withPVCs $ HashMap.delete (namespace, name)]
+                     terminating :: s -> s
+                     terminating = withPVCs $ HashMap.adjust (\pod -> pod & status.phase ?~ "Terminating") (namespace, name)
+                     deleted :: s -> s
+                     deleted = withPVCs $ HashMap.delete (namespace, name)
                      after :: GHC.Int64 -> Elapsed
                      after n = timestamp + (Elapsed $ Seconds n)
                      in
-                       HashMap.insert (after 2) deleted (HashMap.insert (after 1) terminating events)
+                       events & at (after 1).anon [] (const False) %~ (\events -> events |> terminating)
+                              & at (after 2).anon [] (const False) %~ (\events -> events |> deleted)
                         )
     pvcs <- State.gets asPVCs
     case HashMap.lookup (namespace, name) pvcs of

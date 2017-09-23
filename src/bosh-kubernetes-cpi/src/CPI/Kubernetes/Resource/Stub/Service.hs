@@ -96,12 +96,12 @@ instance (MonadThrow m, MonadWait m, Monoid w, HasServices s, HasWaitCount w, Ha
     State.modify $ withTimeline
                  (\events ->
                    let
-                     deleted :: [s -> s]
-                     deleted = [withServices $ HashMap.delete (namespace, name)]
+                     deleted :: s -> s
+                     deleted = withServices $ HashMap.delete (namespace, name)
                      after :: GHC.Int64 -> Elapsed
                      after n = timestamp + (Elapsed $ Seconds n)
                      in
-                       HashMap.insert (after 1) deleted events
+                       events & at (after 1).anon [] (const False) %~ (\events -> events |> deleted)
                        )
     pure undefined
 

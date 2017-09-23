@@ -32,6 +32,7 @@ library
         CPI.Kubernetes.Action.CreateDisk
         CPI.Kubernetes.Action.DeleteDisk
         CPI.Kubernetes.Action.AttachDisk
+        CPI.Kubernetes.Action.DetachDisk
         Resource
         CPI.Kubernetes.Resource.Servant
         CPI.Kubernetes.Resource.Pod
@@ -126,6 +127,7 @@ test-suite unit
         CPI.Kubernetes.Action.CreateDiskSpec
         CPI.Kubernetes.Action.DeleteDiskSpec
         CPI.Kubernetes.Action.AttachDiskSpec
+        CPI.Kubernetes.Action.DetachDiskSpec
     ghc-options: -threaded -rtsopts -with-rtsopts=-N
 test-suite stub
     type: exitcode-stdio-1.0

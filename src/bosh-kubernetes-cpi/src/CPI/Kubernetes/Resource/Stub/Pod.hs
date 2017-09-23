@@ -112,12 +112,14 @@ instance (MonadThrow m, Monoid w, HasPods s, HasSecrets s, HasImages s, HasWaitC
                                            <> All ((\x -> secretNames ^. contains x) `all` secretVolumeNames)
                        secretNames = HashSet.fromList $ secrets ^.. each.name
                        secretVolumeNames = HashSet.fromList $ pod' ^.. Pod.spec._Just.PodSpec.volumes._Just.each.Volume.secret._Just.SecretVolumeSource.secretName._Just
+                       running :: s -> s
+                       running = withPods $ HashMap.adjust (status.phase ?~ "Running") (namespace, podName)
+                       after :: GHC.Int64 -> Elapsed
+                       after n = timestamp + (Elapsed $ Seconds n)
                      in
                        if getAll runningConditions
                          then
-                           HashMap.insert (timestamp + (Elapsed $ Seconds 1))
-                           [withPods $ HashMap.adjust (status.phase ?~ "Running") (namespace, podName)]
-                           events
+                           events & at (after 1).anon [] (const False) %~ (\events -> events |> running)
                          else
                            events)
     pure pod'
@@ -140,18 +142,16 @@ instance (MonadThrow m, Monoid w, HasPods s, HasSecrets s, HasImages s, HasWaitC
     State.modify $ withTimeline
                  (\events ->
                    let
-                     terminating :: [s -> s]
-                     terminating = [withPods $ HashMap.adjust (\pod -> pod & status.phase ?~ "Terminating") (namespace, name)]
-                     deleted :: [s -> s]
-                     deleted = [withPods $ HashMap.delete (namespace, name)]
+                     terminating :: s -> s
+                     terminating = withPods $ HashMap.adjust (\pod -> pod & status.phase ?~ "Terminating") (namespace, name)
+                     deleted :: s -> s
+                     deleted = withPods $ HashMap.delete (namespace, name)
                      after :: GHC.Int64 -> Elapsed
                      after n = timestamp + (Elapsed $ Seconds n)
                      in
-                       HashMap.fromList [
-                           (after 1, terminating)
-                         , (after 2, deleted)
-                       ])
-
+                       events & at (after 1).anon [] (const False) %~ (\events -> events |> terminating)
+                              & at (after 2).anon [] (const False) %~ (\events -> events |> deleted)
+                  )
     pods <- State.gets asPods
     case HashMap.lookup (namespace, name) pods of
       Just pvc -> pure pvc

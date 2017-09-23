@@ -50,6 +50,7 @@ import qualified CPI.Kubernetes.Action.CreateDisk          as CreateDisk
 import qualified CPI.Kubernetes.Action.CreateVm            as CreateVm
 import qualified CPI.Kubernetes.Action.DeleteDisk          as DeleteDisk
 import qualified CPI.Kubernetes.Action.DeleteVm            as DeleteVm
+import qualified CPI.Kubernetes.Action.DetachDisk          as DetachDisk
 import           Resource
 
 import qualified Kubernetes.Api.ApivApi                    as Kube
@@ -147,34 +148,6 @@ instance Base.MonadCpi Config IO where
   detachDisk :: Base.VmId
           -> Base.DiskId
           -> Base.Cpi Config IO ()
-  detachDisk (Base.VmId vmId) (Base.DiskId diskId) =  do
-    pod <- getPod vmId
-    disk <- getPersistentVolumeClaim diskId
-    case (pod, disk) of
-      (Nothing, Nothing) -> throwM $ Base.CloudError ("Neither Pod '" <> vmId <> "' nor Disk '" <> diskId <> "' exist")
-      (Nothing, _) -> throwM $ Base.CloudError ("Pod '" <> vmId <> "' does not exist")
-      (_, Nothing) -> throwM $ Base.CloudError ("Disk '" <> diskId <> "' does not exist")
-      (Just pod, Just disk) -> let
-        Just agentId = pod ^? Pod.metadata._Just.ObjectMeta.labels._Just.Any.any.at "bosh.cloudfoundry.org/agent-id"._Just._String
-        selector = "bosh.cloudfoundry.org/agent-id" <> "=" <> agentId
-        removeFirst []     = []
-        removeFirst (x:xs) = xs
-        in do
-          secretList <- listSecret selector
-          serviceList <- listService selector
-          let secret = head $ SecretList._items secretList
-              rawSettings = secret ^. Secret.data_._Just.Any.any.at "config.json".non ""._String
-
-          settings <- Secrets.withBase64 (\raw -> do
-                agentSettings <- Base.parseSettings raw
-                pure $ toStrict $ Aeson.encode $ Base.removePersistentDisk agentSettings diskId
-              ) rawSettings
-          deletePod $ pod ^. Pod.metadata._Just.ObjectMeta.name._Just
-          let newSecret = secret & Secret.data_._Just.Any.any .~ HashMap.singleton "config.json" (String settings)
-          updateSecret newSecret
-          let newPod = Model.cpPod pod
-                           & Pod.spec._Just.PodSpec.volumes._Just %~ removeFirst
-                           & Pod.spec._Just.PodSpec.containers.element 0.Container.volumeMounts._Just %~ removeFirst
-                           & Pod.status .~ Nothing
-          createPod newPod
-          return ()
+  detachDisk vmId diskId =  do
+    config <- ask
+    config `runResource` DetachDisk.detachDisk vmId diskId

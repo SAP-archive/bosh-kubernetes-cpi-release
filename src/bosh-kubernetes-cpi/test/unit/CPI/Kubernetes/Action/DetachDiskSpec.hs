@@ -3,7 +3,7 @@
 {-# LANGUAGE QuasiQuotes       #-}
 {-# LANGUAGE TypeFamilies      #-}
 
-module CPI.Kubernetes.Action.AttachDiskSpec(spec) where
+module CPI.Kubernetes.Action.DetachDiskSpec(spec) where
 
 import           Test.Hspec
 
@@ -56,6 +56,7 @@ import           Control.Monad.Stub.Wait
 import           CPI.Kubernetes.Action.AttachDisk
 import           CPI.Kubernetes.Action.CreateDisk
 import           CPI.Kubernetes.Action.CreateVm
+import           CPI.Kubernetes.Action.DetachDisk
 import           CPI.Kubernetes.Config
 import           CPI.Kubernetes.Resource.Metadata
 import           CPI.Kubernetes.Resource.Pod
@@ -89,7 +90,7 @@ runStubT' :: TestConfig -> KubeState -> StubT TestConfig KubeState NoOutput IO (
 runStubT' = runStubT
 
 spec :: Spec
-spec = describe "attachVm" $ do
+spec = describe "detachVm" $ do
   let agentId = "test-agent"
       prepare = do
         vmId <- createVm
@@ -103,6 +104,7 @@ spec = describe "attachVm" $ do
                   1
                   (Base.DiskProperties undefined)
                   (Base.VmId "")
+        attachDisk vmId diskId
         pure (vmId, diskId)
       access :: (?agent :: Object) => TestConfig
       access = TestConfig {
@@ -127,13 +129,13 @@ spec = describe "attachVm" $ do
              } $ do
       (vmId, diskId) <- prepare
 
-      attachDisk vmId diskId
+      detachDisk vmId diskId
 
       maybePod <- getPod "bosh" (Unwrapped vmId)
       lift $ maybePod `shouldSatisfy` isJust
 
   describe "should re-create Pod" $ do
-    it "with volume added" $ do
+    it "with volume removed" $ do
       void $ runStubT'
                access
                emptyKube' {
@@ -141,17 +143,17 @@ spec = describe "attachVm" $ do
                } $ do
         (vmId, diskId) <- prepare
 
-        attachDisk vmId diskId
+        detachDisk vmId diskId
 
         maybePod <- getPod "bosh" (Unwrapped vmId)
 
         let Just pod = maybePod
             volumeNames = pod ^.. (Pod.volumes.each.Volume.name)
             secretVolumes = pod ^.. (Pod.volumes.each.Volume.persistentVolumeClaim._Just)
-        lift $ volumeNames `shouldContain` ["persistent-disk"]
-        lift $ secretVolumes `shouldContain` [mkPersistentVolumeClaimVolumeSource $ Unwrapped diskId]
+        lift $ volumeNames `shouldNotContain` ["persistent-disk"]
+        lift $ secretVolumes `shouldNotContain` [mkPersistentVolumeClaimVolumeSource $ Unwrapped diskId]
 
-    it "with volume mounted" $ do
+    it "with volume unmounted" $ do
       void $ runStubT'
                access
                emptyKube' {
@@ -159,15 +161,15 @@ spec = describe "attachVm" $ do
                } $ do
         (vmId, diskId) <- prepare
 
-        attachDisk vmId diskId
+        detachDisk vmId diskId
 
         maybePod <- getPod "bosh" (Unwrapped vmId)
 
         let Just pod = maybePod
             volumeMountNames = pod ^.. Pod.volumeMounts.each.VolumeMount.name
             volumeMountPaths = pod ^.. Pod.volumeMounts.each.VolumeMount.mountPath
-        lift $ volumeMountNames `shouldContain` ["persistent-disk"]
-        lift $ volumeMountPaths `shouldContain` ["/var/vcap/bosh/disks/" <> (Unwrapped diskId)]
+        lift $ volumeMountNames `shouldNotContain` ["persistent-disk"]
+        lift $ volumeMountPaths `shouldNotContain` ["/var/vcap/bosh/disks/" <> (Unwrapped diskId)]
     it "and wait for the Pod to be running" $ do
      (_, s, _) <- runStubT'
                     access
@@ -176,16 +178,16 @@ spec = describe "attachVm" $ do
                     } $ do
                     (vmId, diskId) <- prepare
 
-                    attachDisk vmId diskId
+                    detachDisk vmId diskId
 
                     maybePod <- getPod "bosh" (Unwrapped vmId)
                     lift $ maybePod `shouldSatisfy` isJust
                     let Just pod = maybePod
                     lift $ (pod ^. Pod.status.Pod.phase._Just) `shouldBe` "Running"
-     (HashMap.size $ events s) `shouldBe` 5 -- pod running, disk bound, pod terminating, pod deleted, pod running
+     (HashMap.size $ events s) `shouldBe` 8 -- pod running, disk bound, pod terminating, pod deleted, pod running, pod terminating, pod deleted, pod running
      pure ()
 
-  it "should add persistent disk to agent settings" $ do
+  it "should remove persistent disk from agent settings" $ do
     void $ runStubT'
              access
              emptyKube' {
@@ -193,14 +195,14 @@ spec = describe "attachVm" $ do
              } $ do
       (vmId, diskId) <- prepare
 
-      attachDisk vmId diskId
+      detachDisk vmId diskId
 
       maybeSecret <- getSecret "bosh" $ "agent-settings-" <> (Unwrapped vmId)
       lift $ maybeSecret `shouldSatisfy` isJust
       let Just secret = maybeSecret
           rawSettings = secret ^. data'.at "config.json".non ""._String
       settings <- Base64.decodeJSON rawSettings
-      lift $ settings ^. disks.persistent.at (Unwrapped diskId)._Just `shouldBe` "/var/vcap/bosh/disks/" <> (Unwrapped diskId)
+      lift $ settings ^. disks.persistent.at (Unwrapped diskId) `shouldBe` Nothing
 
   context "when Pod doesn't exist" $ do
     let prepare = do
@@ -210,15 +212,15 @@ spec = describe "attachVm" $ do
                       (Base.VmId "")
           pure (Base.VmId "my-pod", diskId)
     it "should fail" $ do
-      let attachDiskAction = void $ runStubT'
+      let detachDiskAction = void $ runStubT'
                              access
                              emptyKube' {
                                  images = HashSet.singleton "some-image"
                              } $ do
                         (vmId, diskId) <- prepare
 
-                        attachDisk vmId diskId
-      attachDiskAction `shouldThrow` cloudErrorWithMessage "Pod 'my-pod' does not exist"
+                        detachDisk vmId diskId
+      detachDiskAction `shouldThrow` cloudErrorWithMessage "Pod 'my-pod' does not exist"
   context "when PVC doesn't exist" $ do
     let prepare = do
           vmId <- createVm
@@ -230,15 +232,15 @@ spec = describe "attachVm" $ do
                     (Base.Environment HashMap.empty)
           pure (vmId, Base.DiskId "my-disk")
     it "should fail" $ do
-      let attachDiskAction = void $ runStubT'
+      let detachDiskAction = void $ runStubT'
                              access
                              emptyKube' {
                                  images = HashSet.singleton "some-image"
                              } $ do
                         (vmId, diskId) <- prepare
 
-                        attachDisk vmId diskId
-      attachDiskAction `shouldThrow` cloudErrorWithMessage "PersistentVolumeClaim 'my-disk' does not exist"
+                        detachDisk vmId diskId
+      detachDiskAction `shouldThrow` cloudErrorWithMessage "PersistentVolumeClaim 'my-disk' does not exist"
   context "when Secret doesn't exist" $ do
     let prepare = do
           config <- asks asConfig
@@ -259,15 +261,15 @@ spec = describe "attachVm" $ do
           waitForSecret "Secret to be deleted"  ns settingsName isNothing
           pure (vmId, diskId)
     it "should fail" $ do
-      let attachDiskAction = void $ runStubT'
+      let detachDiskAction = void $ runStubT'
                              access
                              emptyKube' {
                                  images = HashSet.singleton "some-image"
                              } $ do
                         (vmId, diskId) <- prepare
 
-                        attachDisk vmId diskId
-      attachDiskAction `shouldThrow` cloudErrorWithMessage ("Secret 'agent-settings-" <> agentId <> "' does not exist")
+                        detachDisk vmId diskId
+      detachDiskAction `shouldThrow` cloudErrorWithMessage ("Secret 'agent-settings-" <> agentId <> "' does not exist")
 
 cloudError :: Selector Base.CloudError
 cloudError (Base.CloudError _) = True
