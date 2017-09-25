@@ -3,4 +3,6 @@ name: bosh-kubernetes-cpi
 blobstore:
   provider: s3
   options:
-    bucket_name: sap-boshreleases
+    bucket_name_old: sap-boshreleases
+    bucket_name: bosh-kubernetes-cpi-release-blobs
+    region: eu-central-1

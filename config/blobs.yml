@@ -1,24 +1,24 @@
 bosh_kubernetes_cpi/dependencies.source.tgz:
   size: 301955068
-  object_id: 6fb7588a-ab27-435e-64b2-587927d65141
+  object_id: 0e7c96cf-bcd3-4c39-7626-1140ef11312c
   sha: 9557b51ff708dfbc91e8c17ce5e055b91fd5151a
 ghc/ghc-8.0.1-x86_64-apple-darwin.tar.xz:
   size: 118496652
-  object_id: 8804f92b-2a54-431a-6eb0-12e9aca2d82c
+  object_id: 03384298-ef74-4785-62fd-b9ef4bbcaf76
   sha: e7a1c558a095afbc4fb514256be940ddb0f23a29
 ghc/ghc-8.0.1-x86_64-deb8-linux.tar.xz:
   size: 112955808
-  object_id: c57f0530-81b9-4936-6b3d-0b255a5079d1
+  object_id: 37b63b96-ee0f-44da-6eb4-d77c39098bb3
   sha: 4a313d073982901a1ce8477386a61e4673511006
 gmp/gmp-5.1.3.tar.xz:
   size: 1818812
-  object_id: 70a87a0d-45a8-45b2-4533-c55b4291c7cd
+  object_id: 59a99964-4459-4c6a-561a-3bfc41a2d132
   sha: 12cfe0911d64fcbd85835df9ddc18c99af8f9a45
 stack/stack-1.3.2-linux-x86_64-static.tar.gz:
   size: 6047156
-  object_id: 354d3d8c-6a91-4b4a-4d62-de81e40becd4
+  object_id: 55085372-02b1-4af8-733c-3e408fa87c5e
   sha: bf7125e47730f2dab2d6b4dc00513201011fd90f
 stack/stack-1.3.2-osx-x86_64.tar.gz:
   size: 12836415
-  object_id: bff01e13-6700-4bf3-4f83-e3dcab994ca0
+  object_id: e5aa47ee-7759-46f0-5c7d-1e859f72b686
   sha: e8a9db496c0a6cc86c7d0399d2f03b3e08c966eb
