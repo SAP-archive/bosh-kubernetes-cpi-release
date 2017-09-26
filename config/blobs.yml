@@ -16,7 +16,9 @@ gmp/gmp-5.1.3.tar.xz:
   sha: 12cfe0911d64fcbd85835df9ddc18c99af8f9a45
 stack/stack-1.5.1-linux-x86_64-static.tar.gz:
   size: 12044845
+  object_id: 97194990-7823-48fe-41e3-529f772224bd
   sha: 8708556c4ba7d1ea0ee0d40015683fe2d8a4b90c
 stack/stack-1.5.1-osx-x86_64.tar.gz:
   size: 13455540
+  object_id: f0762327-8ef7-422c-6ed7-60d241dea94a
   sha: b4cbbc8d5bd466d4fedf2aa5950e4f3e4508f37b
