@@ -1,0 +1,23 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: bosh-internal
+spec:
+  ports:
+    - name: blobstore
+      port: 25250
+      targetPort: 25250
+    - name: mbus
+      port: 4222
+      targetPort: 4222
+    - name: director
+      port: 25555
+      targetPort: 25555
+    - name: create-env
+      port: 6868
+      targetPort: 6868
+    - name: ssh
+      port: 22
+      targetPort: 22
+  type: ClusterIP
