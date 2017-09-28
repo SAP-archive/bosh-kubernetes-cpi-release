@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
@@ -70,14 +71,15 @@ import qualified Kubernetes.Model.V1.ServiceList           as ServiceList
 import qualified Kubernetes.Model.V1.ServicePort           as ServicePort
 import qualified Kubernetes.Model.V1.ServiceSpec           as ServiceSpec
 
-instance Base.MonadCpi Config IO where
+instance Base.CpiConfiguration Config IO where
   parseConfig :: ByteString -> IO Config
   parseConfig = CPI.Kubernetes.Config.parseConfig
 
+instance Base.MonadCpi Config (Resource Config IO) where
   createStemcell ::
        FilePath
     -> Base.StemcellProperties
-    -> Base.Cpi Config IO Base.StemcellId
+    -> Resource Config IO Base.StemcellId
   createStemcell _ (Base.StemcellProperties properties) = do
     let imageId = properties ^. key "image"._String
     if imageId == "" then
@@ -86,7 +88,7 @@ instance Base.MonadCpi Config IO where
       pure $ Base.StemcellId imageId
   deleteStemcell ::
        Base.StemcellId
-    -> Base.Cpi Config IO ()
+    -> Resource Config IO ()
   deleteStemcell _ = pure ()
 
   createVm ::
@@ -96,51 +98,41 @@ instance Base.MonadCpi Config IO where
     -> Base.Networks
     -> Base.DiskLocality
     -> Base.Environment
-    -> Base.Cpi Config IO Base.VmId
-  createVm agentId stemcell cloudProperties networkSpec diskLocality env = do
-    config <- ask
-    config `runResource` CreateVm.createVm agentId stemcell cloudProperties networkSpec diskLocality env
+    -> Resource Config IO Base.VmId
+  createVm = CreateVm.createVm
 
   hasVm :: Base.VmId
-          -> Base.Cpi Config IO Bool
+          -> Resource Config IO Bool
   hasVm (Base.VmId vmId) = hasPod vmId
 
   deleteVm :: Base.VmId
-          -> Base.Cpi Config IO ()
-  deleteVm vmId = do
-    config <- ask
-    config `runResource` DeleteVm.deleteVm vmId
+          -> Resource Config IO ()
+  deleteVm = DeleteVm.deleteVm
 
   createDisk :: Integer
     -> Base.DiskProperties
     -> Base.VmId
-    -> Base.Cpi Config IO Base.DiskId
-  createDisk size properties vmId = do
-    config <- ask
-    config `runResource` CreateDisk.createDisk size properties vmId
+    -> Resource Config IO Base.DiskId
+  createDisk = CreateDisk.createDisk
 
   hasDisk :: Base.DiskId
-          -> Base.Cpi Config IO Bool
+          -> Resource Config IO Bool
   hasDisk (Base.DiskId claimId) = hasPersistentVolumeClaim claimId
 
   deleteDisk :: Base.DiskId
-          -> Base.Cpi Config IO ()
+          -> Resource Config IO ()
   deleteDisk diskId = do
     exists <- hasPersistentVolumeClaim (Unwrapped diskId)
     config <- ask
-    when exists $ void $ config `runResource` DeleteDisk.deleteDisk diskId
+    when exists $ void $ DeleteDisk.deleteDisk diskId
 
 
   attachDisk :: Base.VmId
           -> Base.DiskId
-          -> Base.Cpi Config IO ()
-  attachDisk vmId diskId = do
-    config <- ask
-    config `runResource` AttachDisk.attachDisk vmId diskId
+          -> Resource Config IO ()
+  attachDisk = AttachDisk.attachDisk
 
   detachDisk :: Base.VmId
           -> Base.DiskId
-          -> Base.Cpi Config IO ()
-  detachDisk vmId diskId =  do
-    config <- ask
-    config `runResource` DetachDisk.detachDisk vmId diskId
+          -> Resource Config IO ()
+  detachDisk = DetachDisk.detachDisk

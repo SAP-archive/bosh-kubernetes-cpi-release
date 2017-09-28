@@ -45,9 +45,6 @@ import CPI.Base.System
 import Control.Monad.Console
 import Control.Monad.FileSystem
 
-instance MonadIO (Base.Cpi ClusterAccess IO) where
-  liftIO = lift
-
 tlsSettings :: Url.BaseUrl -> Credential -> TLSSettings
 tlsSettings serverUrl clientCredentials =
   let

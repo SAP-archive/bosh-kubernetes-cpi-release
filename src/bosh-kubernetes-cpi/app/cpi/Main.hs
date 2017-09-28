@@ -5,7 +5,8 @@
 module Main(main) where
 
 import qualified CPI.Base       as Base
-import qualified CPI.Kubernetes as Kubernetes
+import CPI.Kubernetes (Config)
+import Resource (Resource)
 
 main :: IO ()
-main = Base.runRequest (Base.handleRequest :: Base.Request -> Base.Cpi Kubernetes.Config IO Base.Response)
+main = Base.runRequest (Base.handleRequest :: Base.Request -> Resource Config IO Base.Response)

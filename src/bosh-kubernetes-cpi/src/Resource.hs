@@ -15,6 +15,7 @@ module Resource(
 
 import           Prelude                      hiding (readFile)
 
+import CPI.Base (CpiRunner(..), CpiConfiguration(..))
 import           CPI.Base.System
 
 import           Control.Exception.Safe
@@ -30,6 +31,11 @@ import           Control.Monad.FileSystem
 import           Control.Monad.State
 import           Control.Monad.Wait
 import           Text.PrettyPrint.Leijen.Text hiding ((<$>), (<>))
+
+instance ( CpiConfiguration c m
+         , MonadArguments m
+         , MonadFileSystem m) => CpiRunner c (Resource c m) m a where
+  runCpi = runResource
 
 newtype Resource config m a = Resource {
   unResource :: ReaderT config m a
