@@ -19,6 +19,8 @@ import           CPI.Kubernetes.Resource.Service          (MonadService, getServ
                                                            updateService)
 import qualified CPI.Kubernetes.Resource.Service          as Service
 import qualified CPI.Kubernetes.VmTypes                   as VmTypes
+import CPI.Kubernetes.VmTypes (VmProperties)
+import qualified CPI.Kubernetes.VmPropertiesLens as L
 import           Resource
 
 import           Kubernetes.Model.V1.Any                  (Any)
@@ -89,12 +91,12 @@ createVm ::
      , MonadSecret m) =>
      Base.AgentId
   -> Base.StemcellId
-  -> Base.VmProperties
+  -> VmProperties
   -> Base.Networks
   -> Base.DiskLocality
   -> Base.Environment
   -> m Base.VmId
-createVm agentId stemcell cloudProperties networks diskLocality env = do
+createVm agentId stemcell vmProperties networks diskLocality env = do
   logDebug $ "Create VM for agent '" <> Unwrapped agentId <> "'"
   let labels = HashMap.empty
                     & HashMap.insert "bosh.cloudfoundry.org/agent-id" (toJSON agentId)
@@ -144,8 +146,7 @@ createVm agentId stemcell cloudProperties networks diskLocality env = do
                       & Pod.volumes %~ (settingsVolume <|)
                       & Pod.volumes %~ (ephemeralVolume <|)
     in createPod ns pod
-  vmType <- VmTypes.parseVmProperties cloudProperties
-  let services = vmType ^. VmTypes.services
+  let services = vmProperties ^. L.services
   services `forM_` (`assignTo` agentId)
   _ <- waitForPod "Pod to be running" ns (Unwrapped agentId) (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
   pure $ Base.VmId $ pod ^. name
@@ -159,7 +160,7 @@ assignTo ::
 service `assignTo` agentId = do
   config <- asks asConfig
   let ns = config & clusterAccess & namespace
-  s <- getService ns $ service ^. VmTypes.serviceName
+  s <- getService ns $ service ^. L.serviceName
   case s of
     Just s' ->
       let s'' = s'
@@ -167,4 +168,4 @@ service `assignTo` agentId = do
              & Service.podSelector.at "bosh.cloudfoundry.org/agent-id".non ""._String .~ (Unwrapped agentId)
       in
         Just <$> updateService ns s''
-    Nothing -> throwM $ Base.CloudError $ "Service '" <> service ^. VmTypes.serviceName <> "' could not be found."
+    Nothing -> throwM $ Base.CloudError $ "Service '" <> service ^. L.serviceName <> "' could not be found."

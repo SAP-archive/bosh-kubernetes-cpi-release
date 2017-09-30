@@ -1,50 +1,16 @@
 {-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 module CPI.Kubernetes (
     module CPI.Kubernetes.Config
   ) where
-import qualified CPI.Base                                  as Base
-import           CPI.Kubernetes.Config
-import           CPI.Kubernetes.Http
-import qualified CPI.Kubernetes.Model                      as Model
-import           CPI.Kubernetes.Networks                   (networks,
-                                                            preconfigured)
-import qualified CPI.Kubernetes.Secrets                    as Secrets
-import qualified CPI.Kubernetes.VmTypes                    as VmTypes
-import           Data.Maybe
 
-import           Control.Lens
-import           Control.Lens.At
-import           Control.Lens.Cons
-import           Control.Monad                             (mapM)
-import           Control.Monad.Catch
-import           Control.Monad.Except
-import           Control.Monad.Log
-import           Control.Monad.Reader
-import qualified Data.Aeson                                as Aeson
-import           Data.Aeson.Lens
-import           Data.Aeson.Types
-import           Data.ByteString                           (ByteString)
-import qualified Data.ByteString                           as BS
-import qualified Data.ByteString.Base64                    as Base64
-import           Data.ByteString.Lazy                      (fromStrict,
-                                                            toStrict)
-import           Data.HashMap.Strict                       (HashMap)
-import qualified Data.HashMap.Strict                       as HashMap
-import           Data.Semigroup
-import           Data.Text                                 (Text)
-import qualified Data.Text                                 as Text
-import           Data.Text.Encoding                        (decodeUtf8,
-                                                            encodeUtf8)
-import           Data.Yaml                                 as Yaml
-import           GHC.Generics
-import qualified Servant.Common.BaseUrl                    as Url
-import qualified Servant.Common.Req
+import qualified CPI.Base                                  as Base
 
 import qualified CPI.Kubernetes.Action.AttachDisk          as AttachDisk
 import qualified CPI.Kubernetes.Action.CreateDisk          as CreateDisk
@@ -52,6 +18,14 @@ import qualified CPI.Kubernetes.Action.CreateVm            as CreateVm
 import qualified CPI.Kubernetes.Action.DeleteDisk          as DeleteDisk
 import qualified CPI.Kubernetes.Action.DeleteVm            as DeleteVm
 import qualified CPI.Kubernetes.Action.DetachDisk          as DetachDisk
+import           CPI.Kubernetes.Config
+import           CPI.Kubernetes.Http
+import qualified CPI.Kubernetes.Model                      as Model
+import           CPI.Kubernetes.Networks                   (networks,
+                                                            preconfigured)
+import qualified CPI.Kubernetes.Secrets                    as Secrets
+import           CPI.Kubernetes.VmTypes                    (VmProperties)
+import qualified CPI.Kubernetes.VmTypes                    as VmTypes
 import           Resource
 
 import qualified Kubernetes.Api.ApivApi                    as Kube
@@ -71,11 +45,42 @@ import qualified Kubernetes.Model.V1.ServiceList           as ServiceList
 import qualified Kubernetes.Model.V1.ServicePort           as ServicePort
 import qualified Kubernetes.Model.V1.ServiceSpec           as ServiceSpec
 
+import           Control.Lens
+import           Control.Lens.At
+import           Control.Lens.Cons
+import           Control.Monad                             (mapM)
+import           Control.Monad.Catch
+import           Control.Monad.Except
+import           Control.Monad.Log
+import           Control.Monad.Reader
+
+import qualified Data.Aeson                                as Aeson
+import           Data.Aeson.Lens
+import           Data.Aeson.Types
+import           Data.ByteString                           (ByteString)
+import qualified Data.ByteString                           as BS
+import qualified Data.ByteString.Base64                    as Base64
+import           Data.ByteString.Lazy                      (fromStrict,
+                                                            toStrict)
+import           Data.HashMap.Strict                       (HashMap)
+import qualified Data.HashMap.Strict                       as HashMap
+import           Data.Maybe
+import           Data.Semigroup
+import           Data.Text                                 (Text)
+import qualified Data.Text                                 as Text
+import           Data.Text.Encoding                        (decodeUtf8,
+                                                            encodeUtf8)
+import           Data.Yaml                                 as Yaml
+import           GHC.Generics
+import qualified Servant.Common.BaseUrl                    as Url
+import qualified Servant.Common.Req
+
 instance Base.CpiConfiguration Config IO where
   parseConfig :: ByteString -> IO Config
   parseConfig = CPI.Kubernetes.Config.parseConfig
 
 instance Base.MonadCpi Config (Resource Config IO) where
+  type VmProperties Config = VmProperties
   createStemcell ::
        FilePath
     -> Base.StemcellProperties
@@ -94,7 +99,7 @@ instance Base.MonadCpi Config (Resource Config IO) where
   createVm ::
        Base.AgentId
     -> Base.StemcellId
-    -> Base.VmProperties
+    -> VmProperties
     -> Base.Networks
     -> Base.DiskLocality
     -> Base.Environment

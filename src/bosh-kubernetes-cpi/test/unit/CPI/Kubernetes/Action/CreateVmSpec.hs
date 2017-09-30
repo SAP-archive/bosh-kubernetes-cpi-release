@@ -8,7 +8,10 @@ module CPI.Kubernetes.Action.CreateVmSpec(spec) where
 import           Test.Hspec
 
 import           Control.Lens
+
 import qualified CPI.Kubernetes.Base64                  as Base64
+import CPI.Kubernetes.VmTypes (VmProperties(..), Service(..), emptyVmProperties)
+
 import           Data.Aeson
 import           Data.Aeson.Lens
 import           Data.ByteString.Lazy                   (fromStrict, toStrict)
@@ -57,12 +60,12 @@ import           CPI.Kubernetes.Resource.Pod
 import qualified CPI.Kubernetes.Resource.Pod            as Pod
 import           CPI.Kubernetes.Resource.Secret         (getSecret)
 import qualified CPI.Kubernetes.Resource.Secret         as Secret
-import           CPI.Kubernetes.Resource.Service        (getService)
+import           CPI.Kubernetes.Resource.Service        (getService, createService, newService)
 import qualified CPI.Kubernetes.Resource.Service        as Service
 import           CPI.Kubernetes.Resource.Stub.Pod
 import           CPI.Kubernetes.Resource.Stub.Secret
 import           CPI.Kubernetes.Resource.Stub.Service
-import           CPI.Kubernetes.Resource.Stub.State
+import           CPI.Kubernetes.Resource.Stub.State (KubeState, emptyKube, images, secrets, events, StubConfig, emptyStubConfig, NoOutput)
 import           Data.Aeson.QQ
 import           Resource
 
@@ -106,7 +109,7 @@ spec = describe "createVm" $ do
       (Base.VmId vmId) <- createVm
                 (Base.AgentId "test-agent")
                 (Base.StemcellId "some-image")
-                (Base.VmProperties $ Object HashMap.empty)
+                emptyVmProperties
                 (Base.Networks HashMap.empty)
                 [Base.VolumeId ""]
                 (Base.Environment HashMap.empty)
@@ -125,7 +128,7 @@ spec = describe "createVm" $ do
         (Base.VmId vmId) <- createVm
                   (Base.AgentId "test-agent")
                   (Base.StemcellId "some-image")
-                  (Base.VmProperties $ Object HashMap.empty)
+                  emptyVmProperties
                   (Base.Networks HashMap.empty)
                   [Base.VolumeId ""]
                   (Base.Environment HashMap.empty)
@@ -145,7 +148,7 @@ spec = describe "createVm" $ do
         (Base.VmId vmId) <- createVm
                   (Base.AgentId "test-agent")
                   (Base.StemcellId "some-image")
-                  (Base.VmProperties $ Object HashMap.empty)
+                  emptyVmProperties
                   (Base.Networks HashMap.empty)
                   [Base.VolumeId ""]
                   (Base.Environment HashMap.empty)
@@ -163,7 +166,7 @@ spec = describe "createVm" $ do
                (Base.VmId vmId) <- createVm
                          (Base.AgentId "test-agent")
                          (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
-                         (Base.VmProperties $ Object HashMap.empty)
+                         emptyVmProperties
                          (Base.Networks HashMap.empty)
                          [Base.VolumeId ""]
                          (Base.Environment HashMap.empty)
@@ -185,7 +188,7 @@ spec = describe "createVm" $ do
                (Base.VmId vmId) <- createVm
                          (Base.AgentId "test-agent")
                          (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
-                         (Base.VmProperties $ Object HashMap.empty)
+                         emptyVmProperties
                          (Base.Networks HashMap.empty)
                          [Base.VolumeId ""]
                          (Base.Environment HashMap.empty)
@@ -207,7 +210,7 @@ spec = describe "createVm" $ do
                  (Base.VmId vmId) <- createVm
                            (Base.AgentId "test-agent")
                            (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
-                           (Base.VmProperties $ Object HashMap.empty)
+                           emptyVmProperties
                            (Base.Networks HashMap.empty)
                            [Base.VolumeId ""]
                            (Base.Environment HashMap.empty)
@@ -227,7 +230,7 @@ spec = describe "createVm" $ do
                  (Base.VmId vmId) <- createVm
                            (Base.AgentId "test-agent")
                            (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
-                           (Base.VmProperties $ Object HashMap.empty)
+                           emptyVmProperties
                            (Base.Networks HashMap.empty)
                            [Base.VolumeId ""]
                            (Base.Environment HashMap.empty)
@@ -248,7 +251,7 @@ spec = describe "createVm" $ do
                 (Base.VmId vmId) <- createVm
                           (Base.AgentId "test-agent")
                           (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
-                          (Base.VmProperties $ Object HashMap.empty)
+                          emptyVmProperties
                           (Base.Networks HashMap.empty)
                           [Base.VolumeId ""]
                           (Base.Environment HashMap.empty)
@@ -269,7 +272,7 @@ spec = describe "createVm" $ do
                 (Base.VmId vmId) <- createVm
                           (Base.AgentId "test-agent")
                           (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
-                          (Base.VmProperties $ Object HashMap.empty)
+                          emptyVmProperties
                           (Base.Networks HashMap.empty)
                           [Base.VolumeId ""]
                           (Base.Environment HashMap.empty)
@@ -291,7 +294,7 @@ spec = describe "createVm" $ do
                 (Base.VmId vmId) <- createVm
                           (Base.AgentId "test-agent")
                           (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
-                          (Base.VmProperties $ Object HashMap.empty)
+                          emptyVmProperties
                           (Base.Networks HashMap.empty)
                           [Base.VolumeId ""]
                           (Base.Environment HashMap.empty)
@@ -320,7 +323,7 @@ spec = describe "createVm" $ do
                 (Base.VmId vmId) <- createVm
                           (Base.AgentId "test-agent")
                           (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
-                          (Base.VmProperties $ Object HashMap.empty)
+                          emptyVmProperties
                           (Base.Networks HashMap.empty)
                           [Base.VolumeId ""]
                           (Base.Environment HashMap.empty)
@@ -338,7 +341,7 @@ spec = describe "createVm" $ do
                 (Base.VmId vmId) <- createVm
                           (Base.AgentId "test-agent")
                           (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
-                          (Base.VmProperties $ Object HashMap.empty)
+                          emptyVmProperties
                           (Base.Networks HashMap.empty)
                           [Base.VolumeId ""]
                           (Base.Environment HashMap.empty)
@@ -356,7 +359,7 @@ spec = describe "createVm" $ do
                     (Base.VmId vmId) <- createVm
                               (Base.AgentId "test-agent")
                               (Base.StemcellId "test-stemcell")
-                              (Base.VmProperties $ Object HashMap.empty)
+                              emptyVmProperties
                               (Base.Networks HashMap.empty)
                               [Base.VolumeId ""]
                               (Base.Environment HashMap.empty)
@@ -378,7 +381,7 @@ spec = describe "createVm" $ do
              (Base.VmId vmId) <- createVm
                        (Base.AgentId "test-agent")
                        (Base.StemcellId "some-image")
-                       (Base.VmProperties $ Object HashMap.empty)
+                       emptyVmProperties
                        (Base.Networks HashMap.empty)
                        [Base.VolumeId ""]
                        (Base.Environment HashMap.empty)
@@ -396,7 +399,7 @@ spec = describe "createVm" $ do
                (Base.VmId vmId) <- createVm
                          (Base.AgentId "test-agent")
                          (Base.StemcellId "some-image")
-                         (Base.VmProperties $ Object HashMap.empty)
+                         emptyVmProperties
                          (Base.Networks HashMap.empty)
                          [Base.VolumeId ""]
                          (Base.Environment HashMap.empty)
@@ -413,7 +416,7 @@ spec = describe "createVm" $ do
                (Base.VmId vmId) <- createVm
                          (Base.AgentId "test-agent")
                          (Base.StemcellId "some-image")
-                         (Base.VmProperties $ Object HashMap.empty)
+                         emptyVmProperties
                          (Base.Networks HashMap.empty)
                          [Base.VolumeId ""]
                          (Base.Environment HashMap.empty)
@@ -440,7 +443,7 @@ spec = describe "createVm" $ do
         (Base.VmId vmId) <- createVm
                   (Base.AgentId "test-agent")
                   (Base.StemcellId "some-image")
-                  (Base.VmProperties $ Object HashMap.empty)
+                  emptyVmProperties
                   (Base.Networks HashMap.empty)
                   [Base.VolumeId ""]
                   (Base.Environment HashMap.empty)
@@ -480,7 +483,7 @@ spec = describe "createVm" $ do
         (Base.VmId vmId) <- createVm
                   (Base.AgentId "test-agent")
                   (Base.StemcellId "some-image")
-                  (Base.VmProperties $ Object HashMap.empty)
+                  emptyVmProperties
                   networks
                   [Base.VolumeId ""]
                   (Base.Environment HashMap.empty)
@@ -495,19 +498,26 @@ spec = describe "createVm" $ do
       let emptyKube'' =
               emptyKube' {
                   images = HashSet.singleton "some-image"
-                , services = HashMap.fromList [
-                                          (("bosh", "my-service-1"), Service.newService "my-service-1")
-                                        , (("bosh", "my-service-2"), Service.newService "my-service-2")
-                                        ]
               }
       it "should point the Services to the Pod" $ do
         void $ runStubT'
                  access
                  emptyKube'' $ do
+          service1 <- createService "bosh" $ newService "my-service-1"
+          service2 <- createService "bosh" $ newService "my-service-2"
           (Base.VmId vmId) <- createVm
                     (Base.AgentId "test-agent")
                     (Base.StemcellId "some-image")
-                    (Base.VmProperties $ Object $ HashMap.singleton "services" $ toJSON [Object $ HashMap.singleton "name" "my-service-1", Object $ HashMap.singleton "name" "my-service-2"])
+                    (emptyVmProperties {
+                       services = [
+                           Service {
+                             serviceName = "my-service-1"
+                           }
+                         , Service {
+                             serviceName = "my-service-2"
+                           }
+                       ]
+                    })
                     (Base.Networks HashMap.empty)
                     [Base.VolumeId ""]
                     (Base.Environment HashMap.empty)
@@ -535,7 +545,13 @@ spec = describe "createVm" $ do
                                     void $ createVm
                                               (Base.AgentId "test-agent")
                                               (Base.StemcellId "some-image")
-                                              (Base.VmProperties $ Object $ HashMap.singleton "services" $ toJSON [Object $ HashMap.singleton "name" "my-service"])
+                                              (emptyVmProperties {
+                                                 services = [
+                                                   Service {
+                                                     serviceName = "my-service"
+                                                   }
+                                                 ]
+                                              })
                                               (Base.Networks HashMap.empty)
                                               [Base.VolumeId ""]
                                               (Base.Environment HashMap.empty)

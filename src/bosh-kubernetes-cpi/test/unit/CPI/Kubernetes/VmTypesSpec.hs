@@ -16,17 +16,17 @@ spec = do
   describe "VmTypes" $ do
     describe "parseVmProperties" $ do
       let vmProperties = VmProperties {
-        _services = []
+        services = []
       }
       it "should parse empty cloud_properties" $ do
-        let empty = Base.VmProperties [aesonQQ|
+        let empty = [aesonQQ|
           {}
         |]
-        result <- parseVmProperties empty
+        result <- Base.parseArgument empty
         result `shouldBe` vmProperties
-      context "given a service of type NodePort" $ do
-        it "should parse the list of ports" $ do
-          let service = Base.VmProperties [aesonQQ|
+      context "given a service name" $ do
+        it "should parse successfully" $ do
+          let service = [aesonQQ|
             {
               "services": [
                 {
@@ -35,15 +35,15 @@ spec = do
               ]
             }
           |]
-          result <- parseVmProperties service
+          result <- Base.parseArgument service
           result `shouldBe` vmProperties {
-            _services = [Service {
-                _serviceName = "my-service"
+            services = [Service {
+                serviceName = "my-service"
             }]
           }
       context "given an invalid service spec with unknown service type" $ do
         it "should fail" $ do
-          let service = Base.VmProperties [aesonQQ|
+          let service = [aesonQQ|
             {
               "services": [
                 {
@@ -52,6 +52,7 @@ spec = do
               ]
             }
           |]
-          result <- try (parseVmProperties service)
+
+          result :: Either Base.CloudError VmProperties <- try (Base.parseArgument service)
           let Left (Base.CloudError errorMessage) = result
-          errorMessage `shouldBe` "Could not parse 'VmProperties': failed to parse field services: When parsing the record Service of type CPI.Kubernetes.VmTypes.Service the key name was not present."
+          errorMessage `shouldBe` "Could not parse value '{\"services\":[{\"unknown-key\":\"value\"}]}': 'failed to parse field services: When parsing the record Service of type CPI.Kubernetes.VmTypes.Service the key name was not present.'"

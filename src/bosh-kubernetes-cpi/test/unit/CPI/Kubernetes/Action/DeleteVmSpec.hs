@@ -9,7 +9,10 @@ import           Debug.Trace
 import           Test.Hspec
 
 import           Control.Lens
+
 import qualified CPI.Kubernetes.Base64                  as Base64
+import CPI.Kubernetes.VmTypes (VmProperties(..), Service(..), emptyVmProperties)
+
 import           Data.Aeson
 import           Data.Aeson.Lens
 import           Data.ByteString.Lazy                   (fromStrict, toStrict)
@@ -68,7 +71,7 @@ import qualified CPI.Kubernetes.Resource.Service        as Service
 import           CPI.Kubernetes.Resource.Stub.Pod
 import           CPI.Kubernetes.Resource.Stub.Secret
 import           CPI.Kubernetes.Resource.Stub.Service
-import           CPI.Kubernetes.Resource.Stub.State
+import           CPI.Kubernetes.Resource.Stub.State (KubeState, emptyKube, images, secrets, events, StubConfig, emptyStubConfig, NoOutput)
 import           Data.Aeson.QQ
 import           Resource
 
@@ -106,7 +109,7 @@ spec = describe "deleteVm" $ do
         (Base.VmId vmId) <- createVm
           (Base.AgentId "test-agent")
           (Base.StemcellId "some-image")
-          (Base.VmProperties $ Object HashMap.empty)
+          emptyVmProperties
           (Base.Networks HashMap.empty)
           [Base.VolumeId ""]
           (Base.Environment HashMap.empty)
@@ -180,7 +183,16 @@ spec = describe "deleteVm" $ do
             createVm
               (Base.AgentId "test-agent")
               (Base.StemcellId "some-image")
-              (Base.VmProperties $ Object $ HashMap.singleton "services" $ toJSON [Object $ HashMap.singleton "name" "my-service-1", Object $ HashMap.singleton "name" "my-service-2"])
+              (emptyVmProperties {
+                 services = [
+                     Service {
+                       serviceName = "my-service-1"
+                     }
+                   , Service {
+                       serviceName = "my-service-2"
+                     }
+                 ]
+              })
               (Base.Networks HashMap.empty)
               [Base.VolumeId ""]
               (Base.Environment HashMap.empty)

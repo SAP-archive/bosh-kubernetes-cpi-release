@@ -3,16 +3,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
-module CPI.Kubernetes.VmTypes(
-    VmProperties(..)
-  , emptyVmProperties
-  , services
-  , Service(..)
+module CPI.Kubernetes.VmPropertiesLens(
+    services
   , serviceName
 ) where
 
+import qualified CPI.Kubernetes.VmTypes as VmProperties
+
 import           Aeson.Helpers
 import           Control.Lens
+import Control.Lens.Helper.LensNames
 import           Control.Monad.Catch
 import           Control.Monad.Except
 import           Control.Monad.Log
@@ -37,28 +37,7 @@ import qualified Kubernetes.Model.V1.Service     as Kubernetes
 import qualified Kubernetes.Model.V1.ServicePort as Kubernetes
 import qualified Kubernetes.Model.V1.ServiceSpec as Kubernetes
 
-emptyVmProperties :: VmProperties
-emptyVmProperties = VmProperties {
-  services = []
-}
 
-data VmProperties = VmProperties {
-  services :: [Service]
-} deriving (Show, Eq)
+makeLensesWith sameNameRules ''VmProperties.VmProperties
+makeLensesWith sameNameRules ''VmProperties.Service
 
-instance FromJSON VmProperties where
-  parseJSON (Object o) =  VmProperties
-                      <$> o .:? "services" .!= []
-  parseJSON invalid    = typeMismatch "VmProperties" invalid
-
-data Service = Service {
-    serviceName  :: Text
-} deriving (Show, Eq)
-
-valueMismatch :: [Text] -> Value -> Parser a
-valueMismatch expectedValues value = fail $ Text.unpack $ "expected one of [" <> Text.intercalate ", " expectedValues <> "], encountered '" <> (Text.decodeUtf8 $ toStrict $ encode value) <> "'"
-
-$(deriveJSON defaultOptions{fieldLabelModifier =
-              fieldLabelMap [
-                          ("serviceName", "name")]}
-            ''Service)

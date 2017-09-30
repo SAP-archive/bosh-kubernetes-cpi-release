@@ -10,6 +10,7 @@ import           Test.Hspec
 import           Control.Lens
 import           CPI.Base.AgentConfig
 import qualified CPI.Kubernetes.Base64                                 as Base64
+import CPI.Kubernetes.VmTypes (VmProperties, emptyVmProperties)
 import           Data.Aeson
 import           Data.Aeson.Lens
 import           Data.ByteString.Lazy                                  (fromStrict,
@@ -96,7 +97,7 @@ spec = describe "detachVm" $ do
         vmId <- createVm
                   (Base.AgentId agentId)
                   (Base.StemcellId "some-image")
-                  (Base.VmProperties $ Object HashMap.empty)
+                  emptyVmProperties
                   (Base.Networks HashMap.empty)
                   [Base.VolumeId ""]
                   (Base.Environment HashMap.empty)
@@ -226,7 +227,7 @@ spec = describe "detachVm" $ do
           vmId <- createVm
                     (Base.AgentId agentId)
                     (Base.StemcellId "some-image")
-                    (Base.VmProperties $ Object HashMap.empty)
+                    emptyVmProperties
                     (Base.Networks HashMap.empty)
                     [Base.VolumeId ""]
                     (Base.Environment HashMap.empty)
@@ -248,7 +249,7 @@ spec = describe "detachVm" $ do
           vmId <- createVm
                     (Base.AgentId agentId)
                     (Base.StemcellId "some-image")
-                    (Base.VmProperties $ Object HashMap.empty)
+                    emptyVmProperties
                     (Base.Networks HashMap.empty)
                     [Base.VolumeId ""]
                     (Base.Environment HashMap.empty)
