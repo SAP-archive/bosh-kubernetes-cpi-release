@@ -21,7 +21,6 @@ import qualified CPI.Kubernetes.Resource.Service          as Service
 import qualified CPI.Kubernetes.VmTypes                   as VmTypes
 import CPI.Kubernetes.VmTypes (VmProperties)
 import qualified CPI.Kubernetes.VmPropertiesLens as L
-import           Resource
 
 import           Kubernetes.Model.V1.Any                  (Any)
 import qualified Kubernetes.Model.V1.Any                  as Any

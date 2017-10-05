@@ -11,8 +11,6 @@ import qualified CPI.Base                                 as Base
 import           CPI.Kubernetes.Config
 import qualified          CPI.Kubernetes.Resource.Metadata         as Metadata
 import           CPI.Kubernetes.Resource.PersistentVolumeClaim
-import qualified CPI.Kubernetes.VmTypes                   as VmTypes
-import           Resource
 
 import           Kubernetes.Model.V1.Any                  (Any)
 import qualified Kubernetes.Model.V1.Any                  as Any
@@ -52,7 +50,6 @@ import           Kubernetes.Model.V1.VolumeMount          (VolumeMount,
                                                            mkVolumeMount)
 import qualified Kubernetes.Model.V1.VolumeMount          as VolumeMount
 
-import qualified CPI.Kubernetes.Base64                    as Base64
 import           Data.ByteString.Lazy                     (toStrict)
 import qualified Data.HashMap.Strict                      as HashMap
 import  Data.HashMap.Strict                       (HashMap)

@@ -53,7 +53,6 @@ import           Servant.Client
 
 import           CPI.Kubernetes.Resource.Metadata       (name)
 import           CPI.Kubernetes.Resource.Pod
-import           CPI.Kubernetes.Resource.Secret
 
 import           Control.Monad.Stub.Console
 import           Control.Monad.Stub.StubMonad

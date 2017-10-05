@@ -9,12 +9,9 @@ module CPI.Kubernetes.Resource.Stub.Secret(
 ) where
 
 import           CPI.Base.Errors                     (CloudError (..))
-import           CPI.Kubernetes.Config
 import           CPI.Kubernetes.Resource.Metadata
 import           CPI.Kubernetes.Resource.Secret
-import           CPI.Kubernetes.Resource.Servant
 import           CPI.Kubernetes.Resource.Stub.State
-import           Resource
 
 import           Kubernetes.Model.Unversioned.Status (Status)
 import           Kubernetes.Model.V1.DeleteOptions   (mkDeleteOptions)

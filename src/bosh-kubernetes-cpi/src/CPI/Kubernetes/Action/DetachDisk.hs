@@ -7,11 +7,9 @@ module CPI.Kubernetes.Action.DetachDisk(
 ) where
 
 import qualified CPI.Base                                      as Base
-import           CPI.Kubernetes.Action.Common
 
 
 import           CPI.Kubernetes.Config
-import           CPI.Kubernetes.Resource.Metadata              as Metadata
 import           CPI.Kubernetes.Resource.PersistentVolumeClaim (MonadPVC, getPersistentVolumeClaim,
                                                                 updatePersistentVolumeClaim)
 import qualified CPI.Kubernetes.Resource.PersistentVolumeClaim as Service
@@ -29,8 +27,6 @@ import           CPI.Kubernetes.Resource.Secret                (MonadSecret,
                                                                 newSecret,
                                                                 updateSecret)
 import qualified CPI.Kubernetes.Resource.Secret                as Secret
-import qualified CPI.Kubernetes.VmTypes                        as VmTypes
-import           Resource
 
 import           Kubernetes.Model.V1.Any                       (Any)
 import qualified Kubernetes.Model.V1.Any                       as Any
