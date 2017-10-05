@@ -12,8 +12,10 @@ module CPI.Kubernetes.Resource.Pod(
   , newContainer
   , container
   , volumes
-  , volumeMounts
   , newPersistentVolume
+  , newEmptyVolume
+  , newSecretVolume
+  , volumeMounts
   , newVolumeMount
   , image
   , status
@@ -32,6 +34,9 @@ import           Kubernetes.Model.V1.Container                         (Containe
                                                                         mkContainer)
 import qualified Kubernetes.Model.V1.Container                         as Container
 import           Kubernetes.Model.V1.DeleteOptions                     (mkDeleteOptions)
+import           Kubernetes.Model.V1.EmptyDirVolumeSource              (EmptyDirVolumeSource,
+                                                                        mkEmptyDirVolumeSource)
+import qualified Kubernetes.Model.V1.EmptyDirVolumeSource              as EmptyDirVolumeSource
 import           Kubernetes.Model.V1.ObjectMeta                        (ObjectMeta,
                                                                         mkObjectMeta)
 import qualified Kubernetes.Model.V1.ObjectMeta                        as ObjectMeta
@@ -48,6 +53,9 @@ import qualified Kubernetes.Model.V1.PodSpec                           as PodSpe
 import           Kubernetes.Model.V1.PodStatus                         (PodStatus,
                                                                         mkPodStatus)
 import qualified Kubernetes.Model.V1.PodStatus                         as PodStatus
+import           Kubernetes.Model.V1.SecretVolumeSource                (SecretVolumeSource,
+                                                                        mkSecretVolumeSource)
+import qualified Kubernetes.Model.V1.SecretVolumeSource                as SecretVolumeSource
 import           Kubernetes.Model.V1.Volume                            (Volume,
                                                                         mkVolume)
 import qualified Kubernetes.Model.V1.Volume                            as Volume
@@ -153,6 +161,14 @@ newVolumeMount name path readOnly = let
   maybeReadOnly = if readOnly then Just True else Nothing
   in VolumeMount.mkVolumeMount name path
                   & VolumeMount.readOnly .~ maybeReadOnly
+
+newSecretVolume :: Text -> Text -> Volume.Volume
+newSecretVolume volumeName secretName = Volume.mkVolume volumeName
+                & Volume.secret .~ Just (mkSecretVolumeSource & SecretVolumeSource.secretName .~ Just secretName)
+
+newEmptyVolume :: Text -> Volume.Volume
+newEmptyVolume volumeName = Volume.mkVolume volumeName
+                & Volume.emptyDir .~ Just mkEmptyDirVolumeSource
 
 image :: Traversal' Container Text
 image = Container.image._Just

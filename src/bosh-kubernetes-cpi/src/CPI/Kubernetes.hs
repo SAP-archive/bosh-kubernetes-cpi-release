@@ -19,13 +19,11 @@ import qualified CPI.Kubernetes.Action.DeleteDisk          as DeleteDisk
 import qualified CPI.Kubernetes.Action.DeleteVm            as DeleteVm
 import qualified CPI.Kubernetes.Action.DetachDisk          as DetachDisk
 import           CPI.Kubernetes.Config
-import           CPI.Kubernetes.Http
-import qualified CPI.Kubernetes.Model                      as Model
-import           CPI.Kubernetes.Networks                   (networks,
-                                                            preconfigured)
-import qualified CPI.Kubernetes.Secrets                    as Secrets
 import           CPI.Kubernetes.VmTypes                    (VmProperties)
 import qualified CPI.Kubernetes.VmTypes                    as VmTypes
+
+import CPI.Kubernetes.Resource.Pod (getPod)
+import CPI.Kubernetes.Resource.PersistentVolumeClaim (getPersistentVolumeClaim)
 import           Resource
 
 import qualified Kubernetes.Api.ApivApi                    as Kube
@@ -108,7 +106,10 @@ instance Base.MonadCpi Config (Resource Config IO) where
 
   hasVm :: Base.VmId
           -> Resource Config IO Bool
-  hasVm (Base.VmId vmId) = hasPod vmId
+  hasVm (Base.VmId vmId) = do
+    config <- ask
+    let ns = namespace $ clusterAccess config
+    getPod ns vmId >>= pure.isJust
 
   deleteVm :: Base.VmId
           -> Resource Config IO ()
@@ -122,13 +123,17 @@ instance Base.MonadCpi Config (Resource Config IO) where
 
   hasDisk :: Base.DiskId
           -> Resource Config IO Bool
-  hasDisk (Base.DiskId claimId) = hasPersistentVolumeClaim claimId
+  hasDisk (Base.DiskId claimId) =  do
+    config <- ask
+    let ns = namespace $ clusterAccess config
+    getPersistentVolumeClaim ns claimId >>= pure.isJust
 
   deleteDisk :: Base.DiskId
           -> Resource Config IO ()
   deleteDisk diskId = do
-    exists <- hasPersistentVolumeClaim (Unwrapped diskId)
     config <- ask
+    let ns = namespace $ clusterAccess config
+    exists <- getPersistentVolumeClaim ns (Unwrapped diskId) >>= pure.isJust
     when exists $ void $ DeleteDisk.deleteDisk diskId
 
 

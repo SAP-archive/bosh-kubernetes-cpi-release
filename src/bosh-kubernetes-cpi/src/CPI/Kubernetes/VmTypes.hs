@@ -30,8 +30,6 @@ import           Data.Text                       (Text)
 import qualified Data.Text                       as Text
 import qualified Data.Text.Encoding              as Text
 
-import qualified CPI.Kubernetes.Model            as Model
-
 import qualified Kubernetes.Model.V1.ObjectMeta  as ObjectMeta
 import qualified Kubernetes.Model.V1.Service     as Kubernetes
 import qualified Kubernetes.Model.V1.ServicePort as Kubernetes

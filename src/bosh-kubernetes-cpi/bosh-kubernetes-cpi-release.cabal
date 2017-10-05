@@ -18,16 +18,10 @@ source-repository head
 
 library
     exposed-modules:
-        Control.Lens.Helper.LensNames
+        Resource
         CPI.Kubernetes
         CPI.Kubernetes.Base64
-        CPI.Kubernetes.Http
         CPI.Kubernetes.Config
-        CPI.Kubernetes.Model
-        CPI.Kubernetes.Networks
-        CPI.Kubernetes.VmTypes
-        CPI.Kubernetes.VmPropertiesLens
-        CPI.Kubernetes.Secrets
         CPI.Kubernetes.Action.Common
         CPI.Kubernetes.Action.CreateVm
         CPI.Kubernetes.Action.DeleteVm
@@ -35,7 +29,6 @@ library
         CPI.Kubernetes.Action.DeleteDisk
         CPI.Kubernetes.Action.AttachDisk
         CPI.Kubernetes.Action.DetachDisk
-        Resource
         CPI.Kubernetes.Resource.Servant
         CPI.Kubernetes.Resource.Pod
         CPI.Kubernetes.Resource.Secret
@@ -47,6 +40,10 @@ library
         CPI.Kubernetes.Resource.Stub.Secret
         CPI.Kubernetes.Resource.Stub.Service
         CPI.Kubernetes.Resource.Stub.PersistentVolumeClaim
+        CPI.Kubernetes.VmTypes
+        CPI.Kubernetes.VmPropertiesLens
+    other-modules:
+        Control.Lens.Helper.LensNames
     build-depends:
         base >=4.7 && <5,
         bosh-cpi-haskell -any,

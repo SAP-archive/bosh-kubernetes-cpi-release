@@ -133,12 +133,9 @@ createVm agentId stemcell vmProperties networks diskLocality env = do
                           <> "exec env -i /usr/sbin/runsvdir-start"]
                       & Container.tty .~ Just True
                       & Container.stdin .~ Just True
-    ephemeralVolume = mkVolume "ephemeral-disk"
-                      & Volume.emptyDir ?~ mkEmptyDirVolumeSource
+    ephemeralVolume = Pod.newEmptyVolume "ephemeral-disk"
     ephemeralVolumeMount = mkVolumeMount "ephemeral-disk" "/var/vcap/data"
-    settingsVolume  = mkVolume "agent-settings"
-                      & Volume.secret ?~ (mkSecretVolumeSource
-                      & SecretVolumeSource.secretName ?~ (secret ^. Metadata.name))
+    settingsVolume  = Pod.newSecretVolume "agent-settings" (secret ^. Metadata.name)
     settingsVolumeMount = mkVolumeMount "agent-settings" "/var/vcap/bosh/settings-source-file"
     pod             = Pod.newPod (Unwrapped agentId) container
                       & Metadata.labels .~ labels
