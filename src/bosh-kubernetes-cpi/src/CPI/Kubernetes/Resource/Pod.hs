@@ -20,6 +20,7 @@ module CPI.Kubernetes.Resource.Pod(
   , image
   , status
   , phase
+  , isRunning
 ) where
 
 import qualified CPI.Base                                              as Base
@@ -178,3 +179,6 @@ status = Pod.status.non mkPodStatus
 
 phase :: Traversal' PodStatus (Maybe Text)
 phase = PodStatus.phase
+
+isRunning :: Maybe Pod -> Bool
+isRunning pod = pod ^. _Just.status.phase._Just == "Running"

@@ -104,8 +104,8 @@ detachDisk ::
      Base.VmId
   -> Base.DiskId
   -> m ()
-detachDisk vmId diskId = do
-  logDebug $ "Detaching disk '" <> Unwrapped diskId <> "' to VM '" <> Unwrapped diskId <> "'"
+detachDisk (Base.VmId vmId) (Base.DiskId diskId) = do
+  logDebug $ "Detaching disk '" <> diskId <> "' to VM '" <> vmId <> "'"
   config <- asks asConfig
   let ns = namespace $ clusterAccess config
       expectJust :: (MonadThrow m) => Text -> Text -> m (Maybe a) -> m a
@@ -116,18 +116,18 @@ detachDisk vmId diskId = do
       expectPod name action = expectJust "Pod" name action
       expectDisk name action = expectJust "PersistentVolumeClaim" name action
       expectSecret name action = expectJust "Secret" name action
-  pod <- expectPod (Unwrapped vmId) (getPod ns $ Unwrapped vmId)
-  expectDisk (Unwrapped diskId) (getPersistentVolumeClaim ns (Unwrapped diskId))
-  secret <- expectSecret ("agent-settings-" <> Unwrapped vmId) (getSecret ns $ "agent-settings-" <> (Unwrapped vmId))
-  deletePod ns $ Unwrapped vmId
-  waitForPod "Pod to be deleted" ns (Unwrapped vmId) isNothing
-  oldSettings <- Base64.decodeJSON $ secret ^. Secret.data'.at "config.json"._Just._String
-  let newSettings = Base.removePersistentDisk oldSettings (Unwrapped diskId)
-      encodedSettings = Base64.encodeJSON newSettings
-      secret' = secret & Secret.data'.at "config.json"._Just._String
-              .~ encodedSettings
+  pod <- expectPod vmId (getPod ns vmId)
+  expectDisk diskId (getPersistentVolumeClaim ns diskId)
+  secret <- expectSecret ("agent-settings-" <> vmId) (getSecret ns $ "agent-settings-" <> vmId)
+  deletePod ns vmId
+  waitForPod "Pod to be deleted" ns vmId isNothing
+  settings <- Base64.withDecoded
+                (Base.removePersistentDisk diskId)
+                (secret ^. Secret.data'.at "config.json"._Just._String)
+  let secret' = secret & Secret.data'.at "config.json"._Just._String
+              .~ settings
   updateSecret ns secret'
   let pod' = (newPodFrom pod) & Pod.volumes %~ (filter (\v -> v ^. Volume.name /= "persistent-disk"))
                               & Pod.volumeMounts %~ (filter (\v -> v ^. VolumeMount.name /= "persistent-disk"))
   createPod ns $ pod'
-  void $ waitForPod "Pod to be running" ns (Unwrapped vmId) (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
+  void $ waitForPod "Pod to be running" ns vmId Pod.isRunning

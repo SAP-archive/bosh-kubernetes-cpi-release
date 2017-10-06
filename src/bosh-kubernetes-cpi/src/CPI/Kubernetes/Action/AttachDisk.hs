@@ -104,8 +104,8 @@ attachDisk ::
      Base.VmId
   -> Base.DiskId
   -> m ()
-attachDisk vmId diskId = do
-  logDebug $ "Attaching disk '" <> Unwrapped diskId <> "' to VM '" <> Unwrapped diskId <> "'"
+attachDisk (Base.VmId vmId) (Base.DiskId diskId) = do
+  logDebug $ "Attaching disk '" <> diskId <> "' to VM '" <> vmId <> "'"
   config <- asks asConfig
   let ns = namespace $ clusterAccess config
       expectJust :: (MonadThrow m) => Text -> Text -> m (Maybe a) -> m a
@@ -116,20 +116,20 @@ attachDisk vmId diskId = do
       expectPod name action = expectJust "Pod" name action
       expectDisk name action = expectJust "PersistentVolumeClaim" name action
       expectSecret name action = expectJust "Secret" name action
-  pod <- expectPod (Unwrapped vmId) (getPod ns $ Unwrapped vmId)
-  expectDisk (Unwrapped diskId) (getPersistentVolumeClaim ns (Unwrapped diskId))
-  secret <- expectSecret ("agent-settings-" <> Unwrapped vmId) (getSecret ns $ "agent-settings-" <> (Unwrapped vmId))
-  deletePod ns $ Unwrapped vmId
-  waitForPod "Pod to be deleted" ns (Unwrapped vmId) isNothing
-  oldSettings <- Base64.decodeJSON $ secret ^. Secret.data'.at "config.json"._Just._String
-  let newSettings = Base.addPersistentDisk oldSettings (Unwrapped diskId) $ "/var/vcap/bosh/disks/" <> (Unwrapped diskId)
-      encodedSettings = Base64.encodeJSON newSettings
-      secret' = secret & Secret.data'.at "config.json"._Just._String
-              .~ encodedSettings
+  pod <- expectPod vmId (getPod ns vmId)
+  expectDisk diskId (getPersistentVolumeClaim ns diskId)
+  secret <- expectSecret ("agent-settings-" <> vmId) (getSecret ns $ "agent-settings-" <> vmId)
+  deletePod ns vmId
+  waitForPod "Pod to be deleted" ns vmId isNothing
+  settings <- Base64.withDecoded
+                (Base.addPersistentDisk diskId ("/var/vcap/bosh/disks/" <> diskId))
+                (secret ^. Secret.data'.at "config.json"._Just._String)
+  let secret' = secret & Secret.data'.at "config.json"._Just._String
+              .~ settings
   updateSecret ns secret'
-  let volume = Pod.newPersistentVolume "persistent-disk" (Unwrapped diskId)
-      volumeMount = Pod.newVolumeMount "persistent-disk" ("/var/vcap/bosh/disks/" <> (Unwrapped diskId)) False
+  let volume = Pod.newPersistentVolume "persistent-disk" diskId
+      volumeMount = Pod.newVolumeMount "persistent-disk" ("/var/vcap/bosh/disks/" <> diskId) False
       pod' = (newPodFrom pod) & Pod.volumes %~ (\volumes -> volumes |> volume)
                               & Pod.volumeMounts %~ (\mounts -> mounts |> volumeMount)
   createPod ns $ pod'
-  void $ waitForPod "Pod to be running" ns (Unwrapped vmId) (\pod -> pod ^. _Just.Pod.status.Pod.phase._Just == "Running")
+  void $ waitForPod "Pod to be running" ns vmId Pod.isRunning

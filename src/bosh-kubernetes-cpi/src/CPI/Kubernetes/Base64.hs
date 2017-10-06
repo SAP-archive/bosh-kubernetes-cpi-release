@@ -1,6 +1,7 @@
 module CPI.Kubernetes.Base64(
     encodeJSON
   , decodeJSON
+  , withDecoded
 ) where
 
 import qualified CPI.Base               as Base
@@ -20,3 +21,8 @@ encodeJSON = decodeUtf8 . Base64.encode . toStrict . Aeson.encode
 
 decodeJSON :: (MonadThrow m, FromJSON j) => Text -> m j
 decodeJSON = either (throwM . Base.CloudError . Text.pack) pure . Aeson.eitherDecodeStrict . Base64.decodeLenient . encodeUtf8
+
+withDecoded :: (MonadThrow m, ToJSON j, FromJSON j) => (j -> j) -> Text -> m Text
+withDecoded f encoded = do
+  decoded <- decodeJSON encoded
+  pure $ encodeJSON $ f decoded
