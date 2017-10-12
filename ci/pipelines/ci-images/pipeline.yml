@@ -1,0 +1,162 @@
+---
+groups:
+- name: ci-images
+  jobs:
+  - ci-base
+  - ci-bosh
+  - ci-gcloud
+  - ci-kubectl
+  - ci-stack
+
+jobs:
+- name: ci-base
+  serial: true
+  plan:
+  - aggregate:
+    - get: cpi-src
+      tags: ((tags))
+    - get: ci-base-src
+      trigger: true
+      tags: ((tags))
+
+  - put: ci-base-image
+    tags: ((tags))
+    params:
+      build: cpi-src/ci/docker/ci-base
+
+- name: ci-bosh
+  serial: true
+  plan:
+  - aggregate:
+    - get: cpi-src
+      tags: ((tags))
+    - get: ci-bosh-src
+      trigger: true
+      tags: ((tags))
+
+  - put: ci-bosh-image
+    tags: ((tags))
+    params:
+      build: cpi-src/ci/docker/ci-bosh
+
+- name: ci-gcloud
+  serial: true
+  plan:
+  - aggregate:
+    - get: cpi-src
+      tags: ((tags))
+    - get: ci-gcloud-src
+      trigger: true
+      tags: ((tags))
+
+  - put: ci-gcloud-image
+    tags: ((tags))
+    params:
+      build: cpi-src/ci/docker/ci-gcloud
+
+- name: ci-kubectl
+  serial: true
+  plan:
+  - aggregate:
+    - get: cpi-src
+      tags: ((tags))
+    - get: ci-kubectl-src
+      trigger: true
+      tags: ((tags))
+
+  - put: ci-kubectl-image
+    tags: ((tags))
+    params:
+      build: cpi-src/ci/docker/ci-kubectl
+
+- name: ci-stack
+  serial: true
+  plan:
+  - aggregate:
+    - get: cpi-src
+      tags: ((tags))
+    - get: ci-stack-src
+      trigger: true
+      tags: ((tags))
+
+  - put: ci-stack-image
+    tags: ((tags))
+    params:
+      build: cpi-src/ci/docker/ci-stack
+
+resources:
+  - name: cpi-src
+    type: git
+    source:
+      uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
+      branch: master
+
+  - name: ci-base-src
+    type: git
+    source:
+      uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
+      branch: master
+      paths: ci/docker/ci-base
+
+  - name: ci-base-image
+    type: docker-image
+    source:
+      repository: loewenstein/ci-base
+      username: ((docker_username))
+      password: ((docker_password))
+
+  - name: ci-bosh-src
+    type: git
+    source:
+      uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
+      branch: master
+      paths: ci/docker/ci-bosh
+
+  - name: ci-bosh-image
+    type: docker-image
+    source:
+      repository: loewenstein/ci-bosh
+      username: ((docker_username))
+      password: ((docker_password))
+
+  - name: ci-gcloud-src
+    type: git
+    source:
+      uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
+      branch: master
+      paths: ci/docker/ci-gcloud
+
+  - name: ci-gcloud-image
+    type: docker-image
+    source:
+      repository: loewenstein/ci-gcloud
+      username: ((docker_username))
+      password: ((docker_password))
+
+  - name: ci-kubectl-src
+    type: git
+    source:
+      uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
+      branch: master
+      paths: ci/docker/ci-kubectl
+
+  - name: ci-kubectl-image
+    type: docker-image
+    source:
+      repository: loewenstein/ci-kubectl
+      username: ((docker_username))
+      password: ((docker_password))
+
+  - name: ci-stack-src
+    type: git
+    source:
+      uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
+      branch: master
+      paths: ci/docker/ci-stack
+
+  - name: ci-stack-image
+    type: docker-image
+    source:
+      repository: loewenstein/ci-stack
+      username: ((docker_username))
+      password: ((docker_password))
