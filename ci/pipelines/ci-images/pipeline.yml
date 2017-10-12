@@ -24,30 +24,11 @@ jobs:
     params:
       build: cpi-src/ci/docker/ci-base
 
-- name: ci-gcloud
-  serial: true
-  plan:
-  - aggregate:
-    - get: cpi-src
-      passed:
-      - ci-base
-      tags: ((tags))
-    - get: ci-gcloud-src
-      trigger: true
-      tags: ((tags))
-
-  - put: ci-gcloud-image
-    tags: ((tags))
-    params:
-      build: cpi-src/ci/docker/ci-gcloud
-
 - name: ci-bosh
   serial: true
   plan:
   - aggregate:
     - get: cpi-src
-      passed:
-      - ci-gcloud
       tags: ((tags))
     - get: ci-bosh-src
       trigger: true
@@ -58,13 +39,26 @@ jobs:
     params:
       build: cpi-src/ci/docker/ci-bosh
 
+- name: ci-gcloud
+  serial: true
+  plan:
+  - aggregate:
+    - get: cpi-src
+      tags: ((tags))
+    - get: ci-gcloud-src
+      trigger: true
+      tags: ((tags))
+
+  - put: ci-gcloud-image
+    tags: ((tags))
+    params:
+      build: cpi-src/ci/docker/ci-gcloud
+
 - name: ci-kubectl
   serial: true
   plan:
   - aggregate:
     - get: cpi-src
-      passed:
-      - ci-base
       tags: ((tags))
     - get: ci-kubectl-src
       trigger: true
@@ -80,8 +74,6 @@ jobs:
   plan:
   - aggregate:
     - get: cpi-src
-      passed:
-      - ci-base
       tags: ((tags))
     - get: ci-stack-src
       trigger: true
@@ -104,8 +96,7 @@ resources:
     source:
       uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
       branch: master
-      paths:
-      - ci/docker/ci-base
+      paths: ci/docker/ci-base
 
   - name: ci-base-image
     type: docker-image
@@ -119,8 +110,7 @@ resources:
     source:
       uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
       branch: master
-      paths:
-      - ci/docker/ci-bosh
+      paths: ci/docker/ci-bosh
 
   - name: ci-bosh-image
     type: docker-image
@@ -134,8 +124,7 @@ resources:
     source:
       uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
       branch: master
-      paths:
-      - ci/docker/ci-gcloud
+      paths: ci/docker/ci-gcloud
 
   - name: ci-gcloud-image
     type: docker-image
@@ -149,8 +138,7 @@ resources:
     source:
       uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
       branch: master
-      paths:
-      - ci/docker/ci-kubectl
+      paths: ci/docker/ci-kubectl
 
   - name: ci-kubectl-image
     type: docker-image
@@ -164,8 +152,7 @@ resources:
     source:
       uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
       branch: master
-      paths:
-      - ci/docker/ci-stack
+      paths: ci/docker/ci-stack
 
   - name: ci-stack-image
     type: docker-image

@@ -4,7 +4,7 @@ platform: linux
 image_resource:
   type: docker-image
   source:
-    repository: loewenstein/ci-bosh
+    repository: loewenstein/main-bosh
 
 inputs:
   - name: cpi-src
