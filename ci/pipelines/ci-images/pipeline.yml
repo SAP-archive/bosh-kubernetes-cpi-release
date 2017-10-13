@@ -13,8 +13,6 @@ jobs:
   serial: true
   plan:
   - aggregate:
-    - get: cpi-src
-      tags: ((tags))
     - get: ci-base-src
       trigger: true
       tags: ((tags))
@@ -22,13 +20,14 @@ jobs:
   - put: ci-base-image
     tags: ((tags))
     params:
-      build: cpi-src/ci/docker/ci-base
+      build: ci-base-src/ci/docker/ci-base
 
 - name: ci-gcloud
   serial: true
   plan:
   - aggregate:
-    - get: cpi-src
+    - get: ci-base-image
+      trigger: true
       passed:
       - ci-base
       tags: ((tags))
@@ -39,13 +38,14 @@ jobs:
   - put: ci-gcloud-image
     tags: ((tags))
     params:
-      build: cpi-src/ci/docker/ci-gcloud
+      build: ci-gcloud-src/ci/docker/ci-gcloud
 
 - name: ci-bosh
   serial: true
   plan:
   - aggregate:
-    - get: cpi-src
+    - get: ci-gcloud-image
+      trigger: true
       passed:
       - ci-gcloud
       tags: ((tags))
@@ -56,13 +56,14 @@ jobs:
   - put: ci-bosh-image
     tags: ((tags))
     params:
-      build: cpi-src/ci/docker/ci-bosh
+      build: ci-bosh-src/ci/docker/ci-bosh
 
 - name: ci-kubectl
   serial: true
   plan:
   - aggregate:
-    - get: cpi-src
+    - get: ci-base-image
+      trigger: true
       passed:
       - ci-base
       tags: ((tags))
@@ -73,15 +74,18 @@ jobs:
   - put: ci-kubectl-image
     tags: ((tags))
     params:
-      build: cpi-src/ci/docker/ci-kubectl
+      build: ci-kubectl-src/ci/docker/ci-kubectl
 
 - name: ci-stack
   serial: true
   plan:
   - aggregate:
-    - get: cpi-src
+    - get: ci-base-image
+      trigger: true
       passed:
       - ci-base
+      params:
+        skip_download: true
       tags: ((tags))
     - get: ci-stack-src
       trigger: true
@@ -90,15 +94,9 @@ jobs:
   - put: ci-stack-image
     tags: ((tags))
     params:
-      build: cpi-src/ci/docker/ci-stack
+      build: ci-stack-src/ci/docker/ci-stack
 
 resources:
-  - name: cpi-src
-    type: git
-    source:
-      uri: https://github.com/sap/bosh-kubernetes-cpi-release.git
-      branch: master
-
   - name: ci-base-src
     type: git
     source:
