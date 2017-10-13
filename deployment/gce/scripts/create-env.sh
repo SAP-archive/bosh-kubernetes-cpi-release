@@ -31,7 +31,7 @@ pushd $BASE_DIR
     --state bosh-env/state.json \
     --vars-store ./bosh-env/creds.yml \
     $BOSH_DEPLOYMENT/bosh.yml \
-    -v director_name=minikube-env \
+    -v director_name=gce-env \
     -v internal_ip=$(kubectl get svc bosh-internal -o jsonpath={.spec.clusterIP}) \
     -o $BOSH_DEPLOYMENT/local-dns.yml \
     -o $BOSH_DEPLOYMENT/kubernetes/cpi.yml \
@@ -53,5 +53,8 @@ pushd $BASE_DIR
 export BOSH_ENVIRONMENT=gce-env
 export BOSH_CLIENT=admin
 export BOSH_CLIENT_SECRET=$(bosh int ./creds.yml --path /admin_password)
+echo $(bosh int ./creds.yml --path /jumpbox_ssh/private_key) > jumpbox.key
+chmod 600 jumpbox.key
+export BOSH_GW_PRIVATE_KEY=jumpbox.key
 EOF
 popd
