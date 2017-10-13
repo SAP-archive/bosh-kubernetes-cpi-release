@@ -13,7 +13,7 @@ apt-get install -y \
      xz-utils \
      zlib1g-dev \
      git \
-     gnupg \
+     gnupg
 apt-get clean
 
 mkdir -p /tmp/stack
