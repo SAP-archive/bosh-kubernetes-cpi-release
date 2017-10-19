@@ -132,6 +132,8 @@ createVm agentId stemcell vmProperties networks diskLocality env = do
                           <> "exec env -i /usr/sbin/runsvdir-start"]
                       & Container.tty .~ Just True
                       & Container.stdin .~ Just True
+                      & Pod.resources.Pod.limits .~ (fmap String (vmProperties ^. L.resources.L.limits._Just))
+                      & Pod.resources.Pod.requests .~ (fmap String (vmProperties ^. L.resources.L.requests._Just))
     ephemeralVolume = Pod.newEmptyVolume "ephemeral-disk"
     ephemeralVolumeMount = mkVolumeMount "ephemeral-disk" "/var/vcap/data"
     settingsVolume  = Pod.newSecretVolume "agent-settings" (secret ^. Metadata.name)
@@ -160,7 +162,7 @@ service `assignTo` agentId = do
   case s of
     Just s' ->
       let s'' = s'
-             & label "bosh.cloudfoundry.org/agent-id" .~ (Unwrapped agentId)
+             & label "bosh.cloudfoundry.org/agent-id" .~ Unwrapped agentId
              & Service.podSelector.at "bosh.cloudfoundry.org/agent-id".non ""._String .~ (Unwrapped agentId)
       in
         Just <$> updateService ns s''

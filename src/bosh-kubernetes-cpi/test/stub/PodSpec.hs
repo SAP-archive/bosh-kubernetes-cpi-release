@@ -178,6 +178,20 @@ spec =
                 lift $ (runningPod ^. _Just.Pod.status.Pod.phase._Just) `shouldBe` "Running"
                 )
 
+    it "creates a Pod with resource requirements" $ do
+      let pod' = pod & Pod.container.Pod.resources.Pod.limit "cpu" .~ "1"
+      void $ run emptyStubConfig emptyKube $ do
+              config <- asks asConfig
+              let ns = namespace $ clusterAccess config
+              withPod pod' $ do
+                (\pod' -> do
+                    lift $ (pod' ^. name) `shouldBe` "test"
+                    maybePod <- waitForPod "Pod to have default service account" ns (pod' ^. name) (maybe False (hasServiceAccount "default"))
+                    lift $ maybePod `shouldSatisfy` isJust
+                    let Just pod'' = maybePod
+                    lift $ (pod'' ^.. Pod.container.Pod.resources.Pod.limit "cpu") `shouldBe` ["1"]
+                    )
+
     context "when a pod with the given name already exists" $
       it "throws ServantError reason 409 CONFLICT" $ do
         void $ run emptyStubConfig emptyKube $

@@ -4,6 +4,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE RankNTypes          #-}
+
 module CPI.Kubernetes.Resource.Pod(
     module Pod
   , MonadPod(..)
@@ -21,6 +23,11 @@ module CPI.Kubernetes.Resource.Pod(
   , status
   , phase
   , isRunning
+  , resources
+  , limits
+  , limit
+  , requests
+  , request
 ) where
 
 import qualified CPI.Base                                              as Base
@@ -34,6 +41,9 @@ import qualified Kubernetes.Model.V1.Any                               as Any
 import           Kubernetes.Model.V1.Container                         (Container,
                                                                         mkContainer)
 import qualified Kubernetes.Model.V1.Container                         as Container
+import           Kubernetes.Model.V1.ResourceRequirements                         (ResourceRequirements,
+                                                                        mkResourceRequirements)
+import qualified Kubernetes.Model.V1.ResourceRequirements                         as ResourceRequirements
 import           Kubernetes.Model.V1.DeleteOptions                     (mkDeleteOptions)
 import           Kubernetes.Model.V1.EmptyDirVolumeSource              (EmptyDirVolumeSource,
                                                                         mkEmptyDirVolumeSource)
@@ -81,7 +91,9 @@ import           Control.Monad.FileSystem
 import           Control.Monad.Log
 import           Control.Monad.Wait
 
+import qualified Data.HashMap.Strict as HashMap
 import           Data.Aeson
+import           Data.Aeson.Lens
 import           Data.ByteString.Lazy                                  (toStrict)
 import           Data.Hourglass
 import           Data.Semigroup
@@ -182,3 +194,18 @@ phase = PodStatus.phase
 
 isRunning :: Maybe Pod -> Bool
 isRunning pod = pod ^. _Just.status.phase._Just == "Running"
+
+resources :: Traversal' Container ResourceRequirements
+resources = Container.resources.non mkResourceRequirements
+
+limits :: Traversal' ResourceRequirements Object
+limits = ResourceRequirements.limits.non (Any.Any HashMap.empty).Any.any
+
+limit :: Text -> Traversal' ResourceRequirements Text
+limit limit = limits.at limit.non ""._String
+
+requests :: Traversal' ResourceRequirements Object
+requests = ResourceRequirements.requests.non (Any.Any HashMap.empty).Any.any
+
+request :: Text -> Traversal' ResourceRequirements Text
+request request = requests.at request.non ""._String

@@ -10,7 +10,8 @@ import           Test.Hspec
 import           Control.Lens
 
 import qualified CPI.Kubernetes.Base64                  as Base64
-import CPI.Kubernetes.VmTypes (VmProperties(..), Service(..), emptyVmProperties)
+import CPI.Kubernetes.VmTypes (VmProperties(VmProperties), Service(Service), Resources(Resources), emptyVmProperties)
+import qualified CPI.Kubernetes.VmTypes as VmTypes
 
 import           Data.Aeson
 import           Data.Aeson.Lens
@@ -350,6 +351,60 @@ spec = describe "createVm" $ do
                 maybePod <- getPod "bosh" vmId
                 lift $ (maybePod ^? _Just.container.Container.stdin._Just) `shouldBe` Just True
 
+      context "when resource limits are provided" $ do
+        it "resource limits" $ do
+          void $ runStubT'
+                  access
+                  emptyKube' {
+                    images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
+                  } $ do
+                  (Base.VmId vmId) <- createVm
+                            (Base.AgentId "test-agent")
+                            (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
+                            emptyVmProperties {
+                              VmTypes.resources = mempty {
+                                VmTypes.limits = Just $ HashMap.fromList [
+                                    ("cpu", "1")
+                                  , ("memory", "2Gi")
+                                ]
+                              }
+                            }
+                            (Base.Networks HashMap.empty)
+                            [Base.VolumeId ""]
+                            (Base.Environment HashMap.empty)
+
+                  lift $ vmId `shouldBe` "test-agent"
+                  maybePod <- getPod "bosh" vmId
+                  lift $ (maybePod ^? _Just.container.resources.limit "cpu") `shouldBe` Just "1"
+                  lift $ (maybePod ^? _Just.container.resources.limit "memory") `shouldBe` Just "2Gi"
+
+      context "when resource requests are provided" $ do
+        it "resource requests" $ do
+          void $ runStubT'
+                  access
+                  emptyKube' {
+                    images = HashSet.singleton "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest"
+                  } $ do
+                  (Base.VmId vmId) <- createVm
+                            (Base.AgentId "test-agent")
+                            (Base.StemcellId "loewenstein/bosh-stemcell-kubernetes-ubuntu-trusty-go_agent:latest")
+                            emptyVmProperties {
+                              VmTypes.resources = mempty {
+                                VmTypes.requests = Just $ HashMap.fromList [
+                                    ("cpu", "1")
+                                  , ("memory", "2Gi")
+                                ]
+                              }
+                            }
+                            (Base.Networks HashMap.empty)
+                            [Base.VolumeId ""]
+                            (Base.Environment HashMap.empty)
+
+                  lift $ vmId `shouldBe` "test-agent"
+                  maybePod <- getPod "bosh" vmId
+                  lift $ (maybePod ^? _Just.container.resources.request "cpu") `shouldBe` Just "1"
+                  lift $ (maybePod ^? _Just.container.resources.request "memory") `shouldBe` Just "2Gi"
+
     it "and wait for the Pod to be running" $ do
      (_, s, _) <- runStubT'
                     access
@@ -509,12 +564,12 @@ spec = describe "createVm" $ do
                     (Base.AgentId "test-agent")
                     (Base.StemcellId "some-image")
                     (emptyVmProperties {
-                       services = [
+                       VmTypes.services = [
                            Service {
-                             serviceName = "my-service-1"
+                             VmTypes.serviceName = "my-service-1"
                            }
                          , Service {
-                             serviceName = "my-service-2"
+                             VmTypes.serviceName = "my-service-2"
                            }
                        ]
                     })
@@ -546,9 +601,9 @@ spec = describe "createVm" $ do
                                               (Base.AgentId "test-agent")
                                               (Base.StemcellId "some-image")
                                               (emptyVmProperties {
-                                                 services = [
+                                                 VmTypes.services = [
                                                    Service {
-                                                     serviceName = "my-service"
+                                                     VmTypes.serviceName = "my-service"
                                                    }
                                                  ]
                                               })

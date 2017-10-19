@@ -6,6 +6,9 @@
 module CPI.Kubernetes.VmPropertiesLens(
     services
   , serviceName
+  , resources
+  , limits
+  , requests
 ) where
 
 import qualified CPI.Kubernetes.VmTypes as VmProperties
@@ -38,4 +41,5 @@ import qualified Kubernetes.Model.V1.ServiceSpec as Kubernetes
 
 makeLensesWith sameNameRules ''VmProperties.VmProperties
 makeLensesWith sameNameRules ''VmProperties.Service
+makeLensesWith sameNameRules ''VmProperties.Resources
 
