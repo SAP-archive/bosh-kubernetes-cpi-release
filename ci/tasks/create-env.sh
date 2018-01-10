@@ -24,7 +24,7 @@ OPS_FILES=$PWD/cpi-src/ci/tasks/ops
 
 OUTPUT=$PWD/create-env
 
-KUBE_API_HOST=$(gcloud container clusters describe ci-cluster-1 --format=json | jq -r .endpoint)
+KUBE_API_HOST=$(gcloud container clusters describe $CLUSTER --format=json | jq -r .endpoint)
 
 KEYS=$PWD/keys
 mkdir $KEYS
