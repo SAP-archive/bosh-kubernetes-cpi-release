@@ -51,7 +51,6 @@ bosh int $BOSH_DEPLOYMENT/bosh.yml \
     -v stemcell_tarball=$STEMCELL \
     -o $BOSH_DEPLOYMENT/local-dns.yml \
     -v kube_namespace=$(cat $PREPARE_NAMESPACE/namespace) \
-    -o $BOSH_DEPLOYMENT/misc/config-server.yml \
     | tee $OUTPUT/create-env.yml
 
 echo "Creating bosh environment"
