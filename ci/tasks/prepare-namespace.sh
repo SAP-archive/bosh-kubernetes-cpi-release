@@ -61,6 +61,9 @@ spec:
     - name: uaa
       port: 8443
       targetPort: 8443
+    - name: credhub
+      port: 8844
+      targetPort: 8844
   type: ClusterIP
 EOF
 )
