@@ -58,6 +58,9 @@ spec:
     - name: dns
       port: 53
       targetPort: 53
+    - name: uaa
+      port: 8443
+      targetPort: 8443
   type: ClusterIP
 EOF
 )
