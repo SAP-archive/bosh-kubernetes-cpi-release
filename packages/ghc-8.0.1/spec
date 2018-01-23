@@ -1,7 +1,0 @@
----
-name: ghc-8.0.1
-
-dependencies: []
-
-files:
-  - ghc/ghc-8.0.1-*.tar.xz

@@ -1,0 +1,9 @@
+---
+name: ghc-8.2.2
+
+dependencies: []
+
+files:
+- ghc/ghc-8.2.2-x86_64-deb8-linux.tar.xz        #from https://downloads.haskell.org/~ghc/8.2.2/ghc-8.2.2-x86_64-deb8-linux.tar.xz
+- ghc/ghc-8.2.2-x86_64-apple-darwin.tar.xz      #from https://downloads.haskell.org/~ghc/8.2.2/ghc-8.2.2-x86_64-apple-darwin.tar.xz
+  

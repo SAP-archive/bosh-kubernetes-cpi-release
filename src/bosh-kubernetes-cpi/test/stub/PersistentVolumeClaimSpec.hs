@@ -121,7 +121,7 @@ spec = describe "PersistentVolumeClaim" $ do
         `shouldThrow` (servantErrorWithStatusCode 404)
 
 servantErrorWithStatusCode :: Int -> Selector ServantError
-servantErrorWithStatusCode expectedStatusCode (FailureResponse (Status code _) _ _) = expectedStatusCode == code
+servantErrorWithStatusCode expectedStatusCode (FailureResponse _ (Status code _) _ _) = expectedStatusCode == code
 
 cloudErrorWithMessage :: Text -> Selector Base.CloudError
 cloudErrorWithMessage expectedMessage (Base.CloudError message) = expectedMessage == message

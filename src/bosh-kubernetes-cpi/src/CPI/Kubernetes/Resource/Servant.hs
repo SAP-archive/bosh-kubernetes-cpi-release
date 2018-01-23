@@ -71,10 +71,7 @@ clientParams serverUrl =
     clientDebug = def
   }
 
-type RestCall model =
-        Manager
-     -> Url.BaseUrl
-     -> Servant.ClientM model
+type RestCall model = Servant.ClientM model
 
 restCall :: (MonadIO m, MonadThrow m, HasConfig c, MonadReader c m, MonadLog (WithSeverity Text) m, Console m, FileSystem m) =>
             RestCall model
@@ -84,7 +81,7 @@ restCall f = do
   let baseUrl = cluster & clusterAccess & server
   creds <- cluster & clusterAccess & credentials
   manager <- liftIO $ newManager $ createManagerSettings baseUrl creds
-  result <- liftIO $ runExceptT $ f manager baseUrl
+  result <- liftIO $ Servant.runClientM f (Servant.ClientEnv manager baseUrl)
   either throwM return result
 
 restCallGetter :: (MonadIO m, MonadCatch m, HasConfig c, MonadReader c m, MonadLog (WithSeverity Text) m, Console m, FileSystem m) =>

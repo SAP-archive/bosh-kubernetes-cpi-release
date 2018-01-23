@@ -1,12 +1,12 @@
 set -e
 
 if [ `uname` == "Darwin" ]; then
-  tar xzf ghc/ghc-8.0.1-x86_64-apple-darwin.tar.xz
+  tar xzf ghc/ghc-8.2.2-x86_64-apple-darwin.tar.xz
 else
-  tar xJf ghc/ghc-8.0.1-x86_64-deb8-linux.tar.xz
+  tar xJf ghc/ghc-8.2.2-x86_64-deb8-linux.tar.xz
 fi
 
-pushd ghc-8.0.1
+pushd ghc-8.2.2
   ./configure --prefix=${BOSH_INSTALL_TARGET}
   make install
 popd

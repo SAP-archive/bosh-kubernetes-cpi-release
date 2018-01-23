@@ -1,8 +1,0 @@
----
-name: stack
-
-dependencies: []
-
-files:
-  - stack/stack-1.5.1-osx-x86_64.tar.gz
-  - stack/stack-1.5.1-linux-x86_64-static.tar.gz

@@ -1,0 +1,9 @@
+---
+name: haskell-stack-lts-10.x
+
+dependencies:
+- gmp-5.1.3
+- ghc-8.2.2
+- stack-1.6.3
+
+files: []

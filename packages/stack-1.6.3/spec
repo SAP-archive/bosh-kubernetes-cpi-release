@@ -1,0 +1,8 @@
+---
+name: stack-1.6.3
+
+dependencies: []
+
+files:
+- stack/stack-1.6.3-linux-x86_64-static.tar.gz  #from https://github.com/commercialhaskell/stack/releases/download/v1.6.3/stack-1.6.3-linux-x86_64-static.tar.gz
+- stack/stack-1.6.3-osx-x86_64.tar.gz           #from https://github.com/commercialhaskell/stack/releases/download/v1.6.3/stack-1.6.3-osx-x86_64.tar.gz

@@ -2,26 +2,24 @@
 name: bosh_kubernetes_cpi
 
 dependencies:
-  - stack
-  - ghc-8.0.1
-  - gmp
+- haskell-stack-lts-10.x
 
 files:
-  - bosh_kubernetes_cpi/dependencies.source.tgz
-  - bosh-kubernetes-cpi/app/**/*
-  - bosh-kubernetes-cpi/src/**/*
-  - bosh-kubernetes-cpi/*.cabal
-  - bosh-kubernetes-cpi/Setup.hs
-  - bosh-kubernetes-cpi/stack.yaml
-  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/src/**/*
-  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/bosh-cpi-haskell.cabal
-  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/Setup.hs
-  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/LICENSE
-  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/dependencies/effect-stubs/src/**/*
-  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/dependencies/effect-stubs/package.yaml
-  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/dependencies/effect-stubs/Setup.hs
-  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/dependencies/effect-stubs/LICENSE
-  - bosh-kubernetes-cpi/dependencies/haskell-kubernetes/lib/**/*
-  - bosh-kubernetes-cpi/dependencies/haskell-kubernetes/haskell-kubernetes.cabal
-  - bosh-kubernetes-cpi/dependencies/haskell-kubernetes/Setup.hs
-  - bosh-kubernetes-cpi/dependencies/haskell-kubernetes/LICENSE
+- bosh_kubernetes_cpi/dependencies.source.tgz
+- bosh-kubernetes-cpi/app/**/*
+- bosh-kubernetes-cpi/src/**/*
+- bosh-kubernetes-cpi/*.cabal
+- bosh-kubernetes-cpi/Setup.hs
+- bosh-kubernetes-cpi/stack.yaml
+- bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/src/**/*
+- bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/bosh-cpi-haskell.cabal
+- bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/Setup.hs
+- bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/LICENSE
+- bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/dependencies/effect-stubs/src/**/*
+- bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/dependencies/effect-stubs/package.yaml
+- bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/dependencies/effect-stubs/Setup.hs
+- bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/dependencies/effect-stubs/LICENSE
+- bosh-kubernetes-cpi/dependencies/haskell-kubernetes/lib/**/*
+- bosh-kubernetes-cpi/dependencies/haskell-kubernetes/haskell-kubernetes.cabal
+- bosh-kubernetes-cpi/dependencies/haskell-kubernetes/Setup.hs
+- bosh-kubernetes-cpi/dependencies/haskell-kubernetes/LICENSE

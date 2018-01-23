@@ -1,0 +1,10 @@
+set -e
+
+STACK_VERSION=1.6.3
+if [ `uname` == "Darwin" ]; then
+  tar xzf stack/stack-${STACK_VERSION}-osx-x86_64.tar.gz
+  cp -R stack-${STACK_VERSION}-osx-x86_64/* ${BOSH_INSTALL_TARGET}
+else
+  tar xzf stack/stack-${STACK_VERSION}-linux-x86_64-static.tar.gz
+  cp -R stack-${STACK_VERSION}-linux-x86_64-static/* ${BOSH_INSTALL_TARGET}
+fi

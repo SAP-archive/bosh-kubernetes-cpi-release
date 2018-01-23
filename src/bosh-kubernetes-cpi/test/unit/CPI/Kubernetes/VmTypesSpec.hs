@@ -198,7 +198,7 @@ spec =
 
           result :: Either Base.CloudError VmProperties <- try (Base.parseArgument service)
           let Left (Base.CloudError errorMessage) = result
-          errorMessage `shouldBe` "Could not parse value '{\"services\":[{\"unknown-key\":\"value\"}]}': 'failed to parse field services: When parsing the record Service of type CPI.Kubernetes.VmTypes.Service the key name was not present.'"
+          errorMessage `shouldBe` "Could not parse value '{\"services\":[{\"unknown-key\":\"value\"}]}': 'When parsing the record Service of type CPI.Kubernetes.VmTypes.Service the key name was not present.'"
 
 shouldParse raw parsed =
   it "shouldParseSuccessfully" $ do

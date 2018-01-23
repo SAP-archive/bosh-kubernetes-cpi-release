@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-7.19
+resolver: lts-10.3
 # docker:
 #   enable: true
 # User packages to be built.
@@ -51,7 +51,6 @@ packages:
 extra-deps:
   - pem-0.2.2
   - tls-extra-0.6.1
-  - logging-effect-1.1.1
   - http-client-0.5.5
   - http-client-tls-0.3.3
   - MonadRandom-0.5
