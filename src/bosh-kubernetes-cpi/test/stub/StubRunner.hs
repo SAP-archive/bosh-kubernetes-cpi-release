@@ -28,7 +28,7 @@ import           Data.Yaml
 import           Control.Exception.Safe
 import           Control.Monad
 import           Control.Monad.Reader
-import           Control.Monad.Stub.StubMonad
+
 import           Control.Monad.Trans
 import           Control.Monad.Trans.Maybe
 import           System.Environment
