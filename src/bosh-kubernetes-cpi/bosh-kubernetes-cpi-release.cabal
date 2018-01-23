@@ -73,7 +73,8 @@ library
         lens -any,
         logging-effect -any,
         wl-pprint-text -any,
-        random -any
+        random -any,
+        effect-stubs -any
     default-language: Haskell2010
     default-extensions: OverloadedStrings
     hs-source-dirs: src
@@ -83,7 +84,8 @@ executable bosh-kubernetes-cpi
     build-depends:
         base -any,
         bosh-kubernetes-cpi-release -any,
-        bosh-cpi-haskell -any
+        bosh-cpi-haskell -any,
+        effect-stubs -any
     default-language: Haskell2010
     hs-source-dirs: app/cpi
     ghc-options: -threaded -rtsopts -with-rtsopts=-N
@@ -111,7 +113,8 @@ test-suite unit
         text -any,
         mtl -any,
         transformers -any,
-        unordered-containers -any
+        unordered-containers -any,
+        effect-stubs -any
     default-language: Haskell2010
     default-extensions: OverloadedStrings ScopedTypeVariables
     hs-source-dirs: test/unit
@@ -151,7 +154,8 @@ test-suite stub
         transformers -any,
         unordered-containers -any,
         tls -any,
-        haskell-kubernetes -any
+        haskell-kubernetes -any,
+        effect-stubs -any
     default-language: Haskell2010
     default-extensions: OverloadedStrings
     hs-source-dirs: test/stub

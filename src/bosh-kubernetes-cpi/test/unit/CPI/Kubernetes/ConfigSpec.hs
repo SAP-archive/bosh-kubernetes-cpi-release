@@ -17,16 +17,18 @@ import           Data.ByteString.Lazy           (fromStrict, toStrict)
 
 import           Control.Exception.Safe
 import           Control.Monad.State
-import           Control.Monad.Stub.Environment
-import           Control.Monad.Stub.FileSystem
-import           Control.Monad.Stub.StubMonad
+
+import           Control.Effect.Stub
+import           Control.Effect.Stub.Environment (HasEnvironment(..))
+import           Control.Effect.Stub.FileSystem
+
 import           Data.ByteString                (ByteString)
 import           Data.HashMap.Strict            (HashMap, (!))
 import qualified Data.HashMap.Strict            as HashMap
 import           Data.Text                      (Text)
 import qualified Servant.Common.BaseUrl         as Url
 
-runStubT' :: () -> SystemState -> StubT () SystemState () IO () -> IO ((), SystemState, ())
+runStubT' :: () -> SystemState -> StubT () () SystemState IO () -> IO ((), SystemState, ())
 runStubT' = runStubT
 
 spec :: Spec

@@ -42,8 +42,8 @@ import           Network.TLS.Extra.Cipher
 import           Data.Default.Class
 import           Data.X509
 import CPI.Base.System
-import Control.Monad.Console
-import Control.Monad.FileSystem
+import Control.Effect.Class.Console
+import Control.Effect.Class.FileSystem
 
 tlsSettings :: Url.BaseUrl -> Credential -> TLSSettings
 tlsSettings serverUrl clientCredentials =
@@ -76,7 +76,7 @@ type RestCall model =
      -> Url.BaseUrl
      -> Servant.ClientM model
 
-restCall :: (MonadIO m, MonadThrow m, HasConfig c, MonadReader c m, MonadLog (WithSeverity Text) m, MonadConsole m, MonadFileSystem m) =>
+restCall :: (MonadIO m, MonadThrow m, HasConfig c, MonadReader c m, MonadLog (WithSeverity Text) m, Console m, FileSystem m) =>
             RestCall model
          -> m model
 restCall f = do
@@ -87,7 +87,7 @@ restCall f = do
   result <- liftIO $ runExceptT $ f manager baseUrl
   either throwM return result
 
-restCallGetter :: (MonadIO m, MonadCatch m, HasConfig c, MonadReader c m, MonadLog (WithSeverity Text) m, MonadConsole m, MonadFileSystem m) =>
+restCallGetter :: (MonadIO m, MonadCatch m, HasConfig c, MonadReader c m, MonadLog (WithSeverity Text) m, Console m, FileSystem m) =>
              RestCall model
           -> m (Maybe model)
 restCallGetter f = do

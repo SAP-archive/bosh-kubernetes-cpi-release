@@ -32,10 +32,10 @@ import           Data.Text                                 (Text)
 import qualified Data.Text                                 as Text
 
 import           Control.Applicative
-import           Control.Monad.Stub.Console
-import           Control.Monad.Stub.FileSystem
-import           Control.Monad.Stub.Time
-import           Control.Monad.Stub.Wait
+import           Control.Effect.Stub.Console
+import           Control.Effect.Stub.FileSystem
+import           Control.Effect.Stub.Time
+import           Control.Effect.Stub.Wait
 
 import           CPI.Kubernetes.Config
 import qualified Servant.Common.BaseUrl                    as Url

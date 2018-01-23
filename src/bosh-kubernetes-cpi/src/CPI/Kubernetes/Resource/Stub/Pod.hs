@@ -54,23 +54,23 @@ import           Servant.Client
 import           CPI.Kubernetes.Resource.Metadata       (name)
 import           CPI.Kubernetes.Resource.Pod
 
-import           Control.Monad.Stub.Console
-import           Control.Monad.Stub.StubMonad
-import           Control.Monad.Stub.Time
-import           Control.Monad.Stub.Wait
+import Control.Effect.Stub (StubT(..))
+import           Control.Effect.Stub.Console
+import           Control.Effect.Stub.Time
+import           Control.Effect.Stub.Wait
 import           CPI.Kubernetes.Resource.Stub.State     (HasImages (..),
                                                          HasPods (..),
                                                          HasSecrets (..))
 
 import           Control.Monad
 import qualified Control.Monad.State                    as State
-import           Control.Monad.Time
-import           Control.Monad.Wait
+--import           Control.Effect.Class.Time
+import           Control.Effect.Class.Wait
 
 import qualified GHC.Int                                as GHC
 
 
-instance (MonadThrow m, Monoid w, HasPods s, HasSecrets s, HasImages s, HasWaitCount w, HasTime s, HasTimeline s) => MonadPod (StubT r s w m) where
+instance (MonadThrow m, Monoid w, HasPods s, HasSecrets s, HasImages s, HasWaitCount w, HasTime s, HasTimeline s) => MonadPod (StubT r w s m) where
 
   createPod namespace pod = do
     let podName = pod ^. name

@@ -76,10 +76,11 @@ import           Data.Maybe
 import           Control.Exception.Safe
 import           Control.Lens
 import           Control.Lens.Operators
-import           Control.Monad.Console
-import           Control.Monad.FileSystem
+import           Control.Effect.Class.Console
+import           Control.Effect.Class.FileSystem
+import           Control.Effect.Class.Wait
+
 import           Control.Monad.Log
-import           Control.Monad.Wait
 
 import           Data.Aeson
 import           Data.ByteString.Lazy                            (toStrict)
@@ -100,7 +101,7 @@ class (Monad m) => MonadPVC m where
   deletePersistentVolumeClaim :: Text -> Text -> m PersistentVolumeClaim
   waitForPersistentVolumeClaim :: Text -> Text -> Text -> (Maybe PersistentVolumeClaim -> Bool) -> m (Maybe PersistentVolumeClaim)
 
-instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem m, MonadWait m, HasConfig c) => MonadPVC (Resource c m) where
+instance (MonadIO m, MonadThrow m, MonadCatch m, Console m, FileSystem m, Wait m, HasConfig c) => MonadPVC (Resource c m) where
 
   createPersistentVolumeClaim namespace pvc = do
     logDebug $ "Creating PersistentVolumeClaim '" <> (decodeUtf8.toStrict.encode) pvc <> "'"

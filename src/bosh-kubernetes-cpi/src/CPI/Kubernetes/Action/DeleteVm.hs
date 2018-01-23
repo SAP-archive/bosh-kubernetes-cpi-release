@@ -75,7 +75,7 @@ import           Data.Semigroup
 import           Data.Maybe
 
 import           Control.Exception.Safe
-import           Control.Monad.FileSystem
+import           Control.Effect.Class.FileSystem
 import           Data.Aeson
 import qualified Data.Aeson                               as Aeson
 
@@ -83,7 +83,7 @@ deleteVm ::
     (  HasConfig c
      , MonadReader c m
      , MonadLog (WithSeverity Text) m
-     , MonadFileSystem m
+     , FileSystem m
      , MonadPod m
      , MonadService m
      , MonadSecret m
@@ -112,7 +112,7 @@ disassociate ::
   (  HasConfig c
    , MonadReader c m
    , MonadLog (WithSeverity Text) m
-   , MonadFileSystem m
+   , FileSystem m
    , MonadService m) => Base.AgentId -> m ()
 disassociate agentId = do
   config <- asks asConfig

@@ -30,16 +30,17 @@ import           System.Random
 import           CPI.Kubernetes.Resource.Metadata
 import           CPI.Kubernetes.Resource.PersistentVolumeClaim
 
-import           Control.Monad.Stub.Console
-import           Control.Monad.Stub.StubMonad
-import           Control.Monad.Stub.Time
-import           Control.Monad.Stub.Wait
+import           Control.Effect.Stub.Console
+import           Control.Effect.Stub
+
+import           Control.Effect.Stub.Time
+import           Control.Effect.Stub.Wait
 import           CPI.Kubernetes.Resource.Stub.State            (HasPVCs (..))
 
 import           Control.Monad
 import qualified Control.Monad.State                           as State
-import           Control.Monad.Time
-import           Control.Monad.Wait
+--import           Control.Effect.Class.Time
+import           Control.Effect.Class.Wait
 
 
 import           Control.Monad.IO.Class
@@ -71,7 +72,7 @@ checkName namespace named =
 
 initialStatus newStatus pvc = pvc & status.phase .~ Just newStatus
 
-instance (MonadIO m, MonadThrow m, Monoid w, HasPVCs s, HasWaitCount w, HasTime s, HasTimeline s) => MonadPVC (StubT r s w m) where
+instance (MonadIO m, MonadThrow m, Monoid w, HasPVCs s, HasWaitCount w, HasTime s, HasTimeline s) => MonadPVC (StubT r w s m) where
 
   createPersistentVolumeClaim namespace pvc = do
     pvc' <- pvc

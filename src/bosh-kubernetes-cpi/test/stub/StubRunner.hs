@@ -17,6 +17,10 @@ import           CPI.Kubernetes.Resource.Stub.Service
 import           CPI.Kubernetes.Resource.Stub.State
 import           Resource
 
+import Control.Effect.Stub
+import Control.Effect
+import Control.Effect.Class.FileSystem
+
 import qualified Data.ByteString                                    as ByteString
 import           Data.Maybe
 import           Data.Yaml
@@ -38,7 +42,8 @@ type MR a = (forall c m .
               , MonadMask (m IO)
               , MonadThrow (m IO)
               , MonadReader c (m IO)
-              , HasConfig c) => (m IO) a)
+              , HasConfig c
+              , MonadIO (m IO)) => (m IO) a)
 
 run :: StubConfig -> KubeState -> MR a -> IO a
 run stubConfig kubeState f = do

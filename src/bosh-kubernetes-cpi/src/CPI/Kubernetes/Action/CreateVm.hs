@@ -76,7 +76,7 @@ import           Data.Aeson.Lens
 import           Data.Semigroup
 
 import           Control.Exception.Safe
-import           Control.Monad.FileSystem
+import           Control.Effect.Class.FileSystem
 import           Data.Aeson
 import qualified Data.Aeson                               as Aeson
 
@@ -84,7 +84,7 @@ createVm ::
     (  HasConfig c
      , MonadReader c m
      , MonadLog (WithSeverity Text) m
-     , MonadFileSystem m
+     , FileSystem m
      , MonadPod m
      , MonadService m
      , MonadSecret m) =>
@@ -153,7 +153,7 @@ assignTo ::
   (  HasConfig c
    , MonadReader c m
    , MonadLog (WithSeverity Text) m
-   , MonadFileSystem m
+   , FileSystem m
    , MonadService m) => VmTypes.Service -> Base.AgentId -> m (Maybe Service)
 service `assignTo` agentId = do
   config <- asks asConfig

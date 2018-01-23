@@ -51,10 +51,11 @@ import qualified Data.Text                                          as Text
 import           Data.Yaml
 
 import           Control.Exception.Safe
-import           Control.Monad.FileSystem
 import           Control.Monad.Reader
-import           Control.Monad.Stub.StubMonad
-import           Control.Monad.Wait
+
+import           Control.Effect.Class.FileSystem
+import           Control.Effect.Class.Wait
+
 import           Data.Typeable
 import           GHC.Stack.Types
 import           Network.HTTP.Types.Status

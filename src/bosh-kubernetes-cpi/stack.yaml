@@ -42,6 +42,8 @@ packages:
   extra-dep: true
 - location: 'dependencies/haskell-kubernetes'
   extra-dep: true
+- location: 'dependencies/bosh-cpi-haskell/dependencies/effect-stubs'
+  extra-dep: true
 # - location: 'forks/logging-effect'
 #   extra-dep: true
 # Dependency packages to be pulled from upstream that are not in the resolver

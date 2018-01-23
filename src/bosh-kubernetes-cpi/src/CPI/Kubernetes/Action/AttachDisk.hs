@@ -89,7 +89,7 @@ import           Data.Aeson.Lens
 import           Data.Semigroup
 
 import           Control.Exception.Safe
-import           Control.Monad.FileSystem
+import           Control.Effect.Class.FileSystem
 import           Data.Aeson
 import qualified Data.Aeson                                    as Aeson
 
@@ -97,7 +97,7 @@ attachDisk ::
     (  HasConfig c
      , MonadReader c m
      , MonadLog (WithSeverity Text) m
-     , MonadFileSystem m
+     , FileSystem m
      , MonadPod m
      , MonadPVC m
      , MonadSecret m) =>

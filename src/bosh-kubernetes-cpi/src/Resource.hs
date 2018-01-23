@@ -24,36 +24,39 @@ import           Control.Monad.Reader
 import           Data.Text                    (Text)
 import           Data.Text.Lazy               (fromStrict)
 
-
-import           Control.Monad.Arguments
-import           Control.Monad.Console
-import           Control.Monad.FileSystem
 import           Control.Monad.State
-import           Control.Monad.Wait
+
+import           Control.Effect.Class.Arguments
+import           Control.Effect.Class.Console
+import           Control.Effect.Class.FileSystem
+import           Control.Effect.Class.Wait
+import           Control.Effect
 import           Text.PrettyPrint.Leijen.Text hiding ((<$>), (<>))
 
 instance ( CpiConfiguration c m
-         , MonadArguments m
-         , MonadFileSystem m) => CpiRunner c (Resource c m) m a where
-  runCpi = runResource
+         , Arguments m
+         , FileSystem m) => CpiRunner c (Resource c m) m a where
+  runCpi c r = runResource c r
 
-newtype Resource config m a = Resource {
-  unResource :: ReaderT config m a
-} deriving(Functor, Applicative, Monad, MonadCatch, MonadThrow, MonadMask, MonadReader config, MonadTrans, MonadIO)
+newtype Resource config m a = Resource (ReaderT config m a)
+  deriving(Functor, Applicative, Monad, MonadCatch, MonadThrow, MonadMask, MonadReader config, MonadIO)
 
-runResource :: config -> Resource config m a -> m a
-runResource config f = unResource f `runReaderT` config
+instance MonadTrans (Resource c) where
+  lift = Resource . lift
 
-instance (MonadIO m, MonadThrow m, MonadWait m) => MonadWait (Resource c m) where
+runResource :: (Monad m) => config -> Resource config m a -> m a
+runResource config (Resource f) = f `runReaderT` config
+
+instance (MonadIO m, MonadThrow m, Wait m) => Wait (Resource c m) where
   wait = lift.wait
 
-instance (MonadIO m, MonadThrow m, MonadArguments m) => MonadArguments (Resource c m) where
+instance (MonadIO m, MonadThrow m, Arguments m) => Arguments (Resource c m) where
   arguments = lift arguments
 
-instance (MonadIO m, MonadThrow m, MonadConsole m) => MonadConsole (Resource c m) where
+instance (MonadIO m, MonadThrow m, Console m) => Console (Resource c m) where
   readStdin = lift readStdin
   writeStdout = lift.writeStdout
   writeStderr = lift.writeStderr
 
-instance (MonadIO m, MonadThrow m, MonadFileSystem m) => MonadFileSystem (Resource c m) where
+instance (MonadIO m, MonadThrow m, FileSystem m) => FileSystem (Resource c m) where
   readFile = lift . readFile

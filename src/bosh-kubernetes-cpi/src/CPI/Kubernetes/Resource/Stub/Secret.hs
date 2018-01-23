@@ -44,18 +44,19 @@ import           Data.Text                           (Text)
 import qualified Data.Text                           as Text
 import           Data.Text.Encoding                  (decodeUtf8)
 
-import           Control.Monad.Stub.StubMonad
-import           Control.Monad.Stub.Time
-import           Control.Monad.Stub.Wait
-import           Control.Monad.Time
-import           Control.Monad.Wait
+
+import           Control.Effect.Stub
+import           Control.Effect.Stub.Time
+import           Control.Effect.Stub.Wait
+--import           Control.Effect.Class.Time
+import           Control.Effect.Class.Wait
 import           CPI.Kubernetes.Resource.Stub.State
 import           Data.HashMap.Strict                 (HashMap, insert)
 import           Data.Hourglass.Types
 
 import qualified GHC.Int                             as GHC
 
-instance (MonadThrow m, MonadWait m, Monoid w, HasSecrets s, HasWaitCount w, HasTime s, HasTimeline s) => MonadSecret (StubT r s w m) where
+instance (MonadThrow m, Wait m, Monoid w, HasSecrets s, HasWaitCount w, HasTime s, HasTimeline s) => MonadSecret (StubT r w s m) where
   createSecret namespace secret = do
     secrets <- State.gets asSecrets
     let secrets' = insert (namespace, secret ^. name) secret secrets

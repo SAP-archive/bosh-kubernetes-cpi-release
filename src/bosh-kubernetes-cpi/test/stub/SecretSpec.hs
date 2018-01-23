@@ -65,9 +65,9 @@ import           Data.Text                              (Text)
 import qualified Data.Text                              as Text
 
 import           Control.Exception.Safe
-import           Control.Monad.FileSystem
+import           Control.Effect.Class.FileSystem
 import           Control.Monad.Reader
-import           Control.Monad.Stub.StubMonad
+
 import           Data.Typeable
 import           GHC.Stack.Types
 import           Network.HTTP.Types.Status

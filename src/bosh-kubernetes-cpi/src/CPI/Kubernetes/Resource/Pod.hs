@@ -86,10 +86,11 @@ import           Data.Maybe
 import           Control.Exception.Safe
 import           Control.Lens
 import           Control.Lens.Operators
-import           Control.Monad.Console
-import           Control.Monad.FileSystem
+import           Control.Effect.Class.Console
+import           Control.Effect.Class.FileSystem
+import           Control.Effect.Class.Wait
+
 import           Control.Monad.Log
-import           Control.Monad.Wait
 
 import qualified Data.HashMap.Strict as HashMap
 import           Data.Aeson
@@ -110,7 +111,7 @@ class (Monad m) => MonadPod m where
   deletePod :: Text -> Text -> m Pod
   waitForPod :: Text -> Text -> Text -> (Maybe Pod -> Bool) -> m (Maybe Pod)
 
-instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem m, MonadWait m, HasConfig c) => MonadPod (Resource c m) where
+instance (MonadIO m, MonadThrow m, MonadCatch m, Console m, FileSystem m, Wait m, HasConfig c) => MonadPod (Resource c m) where
 
   createPod namespace pod = do
     logDebug $ "Creating pod '" <> (decodeUtf8.toStrict.encode) pod <> "'"

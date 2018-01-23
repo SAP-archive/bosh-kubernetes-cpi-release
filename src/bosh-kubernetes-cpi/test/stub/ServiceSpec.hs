@@ -71,8 +71,8 @@ import qualified Data.Text                            as Text
 
 import           Control.Exception.Safe
 import Control.Monad.Reader
-import           Control.Monad.FileSystem
-import           Control.Monad.Stub.StubMonad
+import           Control.Effect.Class.FileSystem
+
 import           Data.Typeable
 import           GHC.Stack.Types
 import           Network.HTTP.Types.Status

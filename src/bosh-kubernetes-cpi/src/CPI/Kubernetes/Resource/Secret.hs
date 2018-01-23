@@ -40,12 +40,13 @@ import           Control.Monad.Reader
 import           Control.Exception.Safe
 import           Control.Lens
 import           Control.Lens.Operators
-import           Control.Monad.Console
-import           Control.Monad.FileSystem
-import           Control.Monad.Log
-import           Servant.Client
+import           Control.Effect.Class.Console
+import           Control.Effect.Class.FileSystem
+import           Control.Effect.Class.Wait
 
-import           Control.Monad.Wait
+import           Control.Monad.Log
+
+import           Servant.Client
 import           Data.Aeson
 import           Data.ByteString.Lazy                (toStrict)
 import qualified Data.HashMap.Strict                 as HashMap
@@ -63,7 +64,7 @@ class (Monad m) => MonadSecret m where
   deleteSecret :: Text -> Text -> m Status
   waitForSecret :: Text -> Text -> Text -> (Maybe Secret -> Bool) -> m (Maybe Secret)
 
-instance (MonadIO m, MonadThrow m, MonadCatch m, MonadConsole m, MonadFileSystem m, MonadWait m, HasConfig c) => MonadSecret (Resource c m) where
+instance (MonadIO m, MonadThrow m, MonadCatch m, Console m, FileSystem m, Wait m, HasConfig c) => MonadSecret (Resource c m) where
 
   createSecret namespace secret = do
     logDebug $ "Creating secret '" <> (decodeUtf8.toStrict.encode) secret <> "'"

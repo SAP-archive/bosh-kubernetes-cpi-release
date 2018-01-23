@@ -21,8 +21,8 @@ import qualified CPI.Base                  as Base
 
 import           Control.Applicative
 import           Control.Monad.Catch
-import           Control.Monad.Environment
-import           Control.Monad.FileSystem
+import           Control.Effect.Class.Environment
+import           Control.Effect.Class.FileSystem
 import           CPI.Base.System
 import           Data.Aeson.Types
 import           Data.ByteString           (ByteString)
@@ -46,7 +46,7 @@ data Config = Config {
 
 data ClusterAccess = ClusterAccess {
     server      :: Url.BaseUrl
-  , credentials :: forall m. (MonadFileSystem m) => m Credentials
+  , credentials :: forall m. (FileSystem m) => m Credentials
   , namespace   :: Text
 }
 
@@ -61,7 +61,7 @@ instance HasConfig Config where
   asConfig = id
   fromConfig = id
 
-parseConfig :: (MonadThrow m, MonadEnvironment m) => ByteString -> m Config
+parseConfig :: (MonadThrow m, Environment m) => ByteString -> m Config
 parseConfig input = do
   RawConfig clusterAccess' agent <- readConfig input
   clusterAccess <- parseClusterAccess clusterAccess'
@@ -83,7 +83,7 @@ parseClusterAccess RawClusterAccess {
     , credentials = parseCredentials credentials
   }
 
-parseCredentials :: forall m. (MonadFileSystem m) => RawCredentials -> m Credentials
+parseCredentials :: forall m. (FileSystem m) => RawCredentials -> m Credentials
 parseCredentials (RawClientCertificate rawCertificate rawPrivateKey) = do
   creds <- readCredential
             (encodeUtf8 rawCertificate)

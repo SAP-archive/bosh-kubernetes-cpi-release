@@ -66,7 +66,7 @@ import           Data.Semigroup
 
 import Control.Applicative
 import           Control.Exception.Safe
-import           Control.Monad.FileSystem
+import           Control.Effect.Class.FileSystem
 import           Data.Aeson
 import qualified Data.Aeson                               as Aeson
 import Data.Maybe
@@ -78,7 +78,7 @@ deleteDisk ::
      , MonadCatch m
      , MonadReader c m
      , MonadLog (WithSeverity Text) m
-     , MonadFileSystem m
+     , FileSystem m
      , MonadPVC m) =>
      Base.DiskId
   -> m ()

@@ -48,11 +48,11 @@ import qualified Data.Text                                          as Text
 
 import qualified CPI.Base                                           as Base
 
-import           Control.Monad.Stub.Console
-import           Control.Monad.Stub.FileSystem
-import           Control.Monad.Stub.StubMonad
+import           Control.Effect.Stub.Console (HasStdin(..), HasStderr(..), HasStdout(..))
+import           Control.Effect.Stub.FileSystem (HasFiles(..))
+import           Control.Effect.Stub.Wait (HasWaitCount(..))
+import           Control.Effect.Stub
 
-import           Control.Monad.Stub.Wait
 import           CPI.Kubernetes.Action.CreateDisk
 import           CPI.Kubernetes.Config
 import           CPI.Kubernetes.Resource.Metadata
@@ -83,7 +83,7 @@ data TestConfig = TestConfig {
 instance HasConfig TestConfig where
   asConfig = config
 
-runStubT' :: TestConfig -> KubeState -> StubT TestConfig KubeState NoOutput IO () -> IO ((), KubeState, NoOutput)
+runStubT' :: TestConfig -> KubeState -> StubT TestConfig NoOutput KubeState IO () -> IO ((), KubeState, NoOutput)
 runStubT' = runStubT
 
 spec :: Spec
