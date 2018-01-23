@@ -17,6 +17,10 @@ files:
   - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/bosh-cpi-haskell.cabal
   - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/Setup.hs
   - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/LICENSE
+  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/dependencies/effect-stubs/src/**/*
+  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/dependencies/effect-stubs/effect-stubs.cabal
+  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/dependencies/effect-stubs/Setup.hs
+  - bosh-kubernetes-cpi/dependencies/bosh-cpi-haskell/dependencies/effect-stubs/LICENSE
   - bosh-kubernetes-cpi/dependencies/haskell-kubernetes/lib/**/*
   - bosh-kubernetes-cpi/dependencies/haskell-kubernetes/haskell-kubernetes.cabal
   - bosh-kubernetes-cpi/dependencies/haskell-kubernetes/Setup.hs
