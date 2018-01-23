@@ -7,7 +7,7 @@
 module CPI.Kubernetes.Resource.Secret(
     Secret
   , SecretList
-  , MonadSecret(..)
+  , Secrets(..)
   , newSecret
   , data'
   , secrets
@@ -37,16 +37,15 @@ import           Kubernetes.Api.ApivApi              (createNamespacedSecret,
 
 import           Control.Monad.Reader
 
-import           Control.Exception.Safe
-import           Control.Lens
-import           Control.Lens.Operators
 import           Control.Effect.Class.Console
 import           Control.Effect.Class.FileSystem
 import           Control.Effect.Class.Wait
+import           Control.Exception.Safe
+import           Control.Lens
+import           Control.Lens.Operators
 
 import           Control.Monad.Log
 
-import           Servant.Client
 import           Data.Aeson
 import           Data.ByteString.Lazy                (toStrict)
 import qualified Data.HashMap.Strict                 as HashMap
@@ -55,8 +54,9 @@ import           Data.Semigroup
 import           Data.Text                           (Text)
 import qualified Data.Text                           as Text
 import           Data.Text.Encoding                  (decodeUtf8)
+import           Servant.Client
 
-class (Monad m) => MonadSecret m where
+class (Monad m) => Secrets m where
   createSecret :: Text -> Secret -> m Secret
   listSecret :: Text -> Maybe Text -> m SecretList
   getSecret :: Text -> Text -> m (Maybe Secret)
@@ -64,7 +64,7 @@ class (Monad m) => MonadSecret m where
   deleteSecret :: Text -> Text -> m Status
   waitForSecret :: Text -> Text -> Text -> (Maybe Secret -> Bool) -> m (Maybe Secret)
 
-instance (MonadIO m, MonadThrow m, MonadCatch m, Console m, FileSystem m, Wait m, HasConfig c) => MonadSecret (Resource c m) where
+instance (MonadIO m, MonadThrow m, MonadCatch m, Console m, FileSystem m, Wait m, HasConfig c) => Secrets (Resource c m) where
 
   createSecret namespace secret = do
     logDebug $ "Creating secret '" <> (decodeUtf8.toStrict.encode) secret <> "'"

@@ -3,12 +3,12 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE RankNTypes          #-}
 
 module CPI.Kubernetes.Resource.Pod(
     module Pod
-  , MonadPod(..)
+  , Pods(..)
   , newPod
   , newPodFrom
   , newContainer
@@ -41,9 +41,6 @@ import qualified Kubernetes.Model.V1.Any                               as Any
 import           Kubernetes.Model.V1.Container                         (Container,
                                                                         mkContainer)
 import qualified Kubernetes.Model.V1.Container                         as Container
-import           Kubernetes.Model.V1.ResourceRequirements                         (ResourceRequirements,
-                                                                        mkResourceRequirements)
-import qualified Kubernetes.Model.V1.ResourceRequirements                         as ResourceRequirements
 import           Kubernetes.Model.V1.DeleteOptions                     (mkDeleteOptions)
 import           Kubernetes.Model.V1.EmptyDirVolumeSource              (EmptyDirVolumeSource,
                                                                         mkEmptyDirVolumeSource)
@@ -64,6 +61,9 @@ import qualified Kubernetes.Model.V1.PodSpec                           as PodSpe
 import           Kubernetes.Model.V1.PodStatus                         (PodStatus,
                                                                         mkPodStatus)
 import qualified Kubernetes.Model.V1.PodStatus                         as PodStatus
+import           Kubernetes.Model.V1.ResourceRequirements              (ResourceRequirements,
+                                                                        mkResourceRequirements)
+import qualified Kubernetes.Model.V1.ResourceRequirements              as ResourceRequirements
 import           Kubernetes.Model.V1.SecretVolumeSource                (SecretVolumeSource,
                                                                         mkSecretVolumeSource)
 import qualified Kubernetes.Model.V1.SecretVolumeSource                as SecretVolumeSource
@@ -83,19 +83,19 @@ import           Control.Monad.Reader
 import qualified Control.Monad.State                                   as State
 import           Data.Maybe
 
-import           Control.Exception.Safe
-import           Control.Lens
-import           Control.Lens.Operators
 import           Control.Effect.Class.Console
 import           Control.Effect.Class.FileSystem
 import           Control.Effect.Class.Wait
+import           Control.Exception.Safe
+import           Control.Lens
+import           Control.Lens.Operators
 
 import           Control.Monad.Log
 
-import qualified Data.HashMap.Strict as HashMap
 import           Data.Aeson
 import           Data.Aeson.Lens
 import           Data.ByteString.Lazy                                  (toStrict)
+import qualified Data.HashMap.Strict                                   as HashMap
 import           Data.Hourglass
 import           Data.Semigroup
 import           Data.Text                                             (Text)
@@ -103,7 +103,7 @@ import qualified Data.Text                                             as Text
 import           Data.Text.Encoding                                    (decodeUtf8)
 import           Servant.Client
 
-class (Monad m) => MonadPod m where
+class (Monad m) => Pods m where
   createPod :: Text -> Pod -> m Pod
   listPod :: Text -> m PodList
   getPod :: Text -> Text -> m (Maybe Pod)
@@ -111,7 +111,7 @@ class (Monad m) => MonadPod m where
   deletePod :: Text -> Text -> m Pod
   waitForPod :: Text -> Text -> Text -> (Maybe Pod -> Bool) -> m (Maybe Pod)
 
-instance (MonadIO m, MonadThrow m, MonadCatch m, Console m, FileSystem m, Wait m, HasConfig c) => MonadPod (Resource c m) where
+instance (MonadIO m, MonadThrow m, MonadCatch m, Console m, FileSystem m, Wait m, HasConfig c) => Pods (Resource c m) where
 
   createPod namespace pod = do
     logDebug $ "Creating pod '" <> (decodeUtf8.toStrict.encode) pod <> "'"

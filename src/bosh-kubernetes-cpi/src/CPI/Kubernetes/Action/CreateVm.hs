@@ -8,14 +8,14 @@ module CPI.Kubernetes.Action.CreateVm(
 import qualified CPI.Base                                 as Base
 import           CPI.Kubernetes.Config
 import           CPI.Kubernetes.Resource.Metadata         as Metadata
-import           CPI.Kubernetes.Resource.Pod              (MonadPod, createPod,
+import           CPI.Kubernetes.Resource.Pod              (Pods, createPod,
                                                            waitForPod)
 import qualified CPI.Kubernetes.Resource.Pod              as Pod
-import           CPI.Kubernetes.Resource.Secret           (MonadSecret,
+import           CPI.Kubernetes.Resource.Secret           (Secrets,
                                                            createSecret, data',
                                                            newSecret)
 import qualified CPI.Kubernetes.Resource.Secret           as Secret
-import           CPI.Kubernetes.Resource.Service          (MonadService, getService,
+import           CPI.Kubernetes.Resource.Service          (Services, getService,
                                                            updateService)
 import qualified CPI.Kubernetes.Resource.Service          as Service
 import qualified CPI.Kubernetes.VmTypes                   as VmTypes
@@ -85,9 +85,9 @@ createVm ::
      , MonadReader c m
      , MonadLog (WithSeverity Text) m
      , FileSystem m
-     , MonadPod m
-     , MonadService m
-     , MonadSecret m) =>
+     , Pods m
+     , Services m
+     , Secrets m) =>
      Base.AgentId
   -> Base.StemcellId
   -> VmProperties
@@ -154,7 +154,7 @@ assignTo ::
    , MonadReader c m
    , MonadLog (WithSeverity Text) m
    , FileSystem m
-   , MonadService m) => VmTypes.Service -> Base.AgentId -> m (Maybe Service)
+   , Services m) => VmTypes.Service -> Base.AgentId -> m (Maybe Service)
 service `assignTo` agentId = do
   config <- asks asConfig
   let ns = config & clusterAccess & namespace

@@ -25,7 +25,7 @@ import           Data.Maybe
 import qualified CPI.Base                             as Base
 import           CPI.Kubernetes.Config
 import           CPI.Kubernetes.Resource.Metadata
-import           CPI.Kubernetes.Resource.Service      (MonadService,
+import           CPI.Kubernetes.Resource.Service      (Services,
                                                        createService,
                                                        deleteService,
                                                        getService, listService,
@@ -80,7 +80,7 @@ import           Servant.Common.Req                   (ServantError (..))
 import           System.Environment
 
 
-withService :: (MonadService m, MonadThrow m, MonadMask m, HasConfig c, MonadReader c m) => Service -> m a -> m a
+withService :: (Services m, MonadThrow m, MonadMask m, HasConfig c, MonadReader c m) => Service -> m a -> m a
 withService service action =
   bracket
     (do
@@ -98,7 +98,7 @@ withService service action =
 
 
 spec :: Spec
-spec = describe "MonadService" $ do
+spec = describe "Services" $ do
   let newTestService name = newService name
                   & Service.spec ?~ serviceSpec
       serviceSpec = newServiceSpec [servicePort]

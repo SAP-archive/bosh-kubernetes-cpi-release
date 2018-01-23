@@ -56,7 +56,7 @@ import           Data.Hourglass.Types
 
 import qualified GHC.Int                             as GHC
 
-instance (MonadThrow m, Wait m, Monoid w, HasSecrets s, HasWaitCount w, HasTime s, HasTimeline s) => MonadSecret (StubT r w s m) where
+instance (MonadThrow m, Wait m, Monoid w, HasSecrets s, HasWaitCount w, HasTime s, HasTimeline s) => Secrets (StubT r w s m) where
   createSecret namespace secret = do
     secrets <- State.gets asSecrets
     let secrets' = insert (namespace, secret ^. name) secret secrets

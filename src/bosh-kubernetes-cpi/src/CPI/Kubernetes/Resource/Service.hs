@@ -11,7 +11,7 @@ module CPI.Kubernetes.Resource.Service(
     Service
   , ServiceList
   , services
-  , MonadService(..)
+  , Services(..)
   , newService
   , newServiceSpec
   , newServicePort
@@ -71,7 +71,7 @@ import           Data.Text                           (Text)
 import qualified Data.Text                           as Text
 import           Data.Text.Encoding                  (decodeUtf8)
 
-class (Monad m) => MonadService m where
+class (Monad m) => Services m where
   createService :: Text -> Service -> m Service
   listService :: Text -> Maybe Text -> m ServiceList
   getService :: Text -> Text -> m (Maybe Service)
@@ -79,7 +79,7 @@ class (Monad m) => MonadService m where
   deleteService :: Text -> Text -> m Status
   waitForService :: Text -> Text -> Text -> (Maybe Service -> Bool) -> m (Maybe Service)
 
-instance (MonadIO m, MonadThrow m, MonadCatch m, Console m, FileSystem m, Wait m, HasConfig c) => MonadService (Resource c m) where
+instance (MonadIO m, MonadThrow m, MonadCatch m, Console m, FileSystem m, Wait m, HasConfig c) => Services (Resource c m) where
 
   createService namespace secret = do
     logDebug $ "Creating secret '" <> (decodeUtf8.toStrict.encode) secret <> "'"

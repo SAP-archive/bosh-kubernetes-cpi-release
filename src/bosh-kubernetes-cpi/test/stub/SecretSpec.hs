@@ -23,8 +23,7 @@ import           Data.Maybe
 import qualified CPI.Base                               as Base
 import           CPI.Kubernetes.Config
 import           CPI.Kubernetes.Resource.Metadata
-import           CPI.Kubernetes.Resource.Secret         (MonadSecret,
-                                                         createSecret,
+import           CPI.Kubernetes.Resource.Secret         (Secrets, createSecret,
                                                          deleteSecret,
                                                          getSecret, listSecret,
                                                          newSecret,
@@ -64,8 +63,8 @@ import qualified Data.HashSet                           as HashSet
 import           Data.Text                              (Text)
 import qualified Data.Text                              as Text
 
-import           Control.Exception.Safe
 import           Control.Effect.Class.FileSystem
+import           Control.Exception.Safe
 import           Control.Monad.Reader
 
 import           Data.Typeable
@@ -75,7 +74,7 @@ import           Servant.Common.Req                     (ServantError (..))
 import           System.Environment
 
 
-withSecret :: (MonadSecret m, MonadThrow m, MonadMask m, HasConfig c, MonadReader c m) => Secret -> m a -> m a
+withSecret :: (Secrets m, MonadThrow m, MonadMask m, HasConfig c, MonadReader c m) => Secret -> m a -> m a
 withSecret secret action =
   bracket
     (do

@@ -33,19 +33,17 @@ import           Control.Monad.Trans
 import           Control.Monad.Trans.Maybe
 import           System.Environment
 
-type MR a = (forall c m .
-              ( MonadPod (m IO)
-              , MonadSecret (m IO)
-              , MonadService (m IO)
-              , MonadPVC (m IO)
-              , MonadTrans m
-              , MonadMask (m IO)
-              , MonadThrow (m IO)
-              , MonadReader c (m IO)
-              , HasConfig c
-              , MonadIO (m IO)) => (m IO) a)
+type Effects a = forall c m. ( Pods (m IO)
+                             , Secrets (m IO)
+                             , Services (m IO)
+                             , PVCs (m IO)
+                             , MonadTrans m
+                             , MonadMask (m IO)
+                             , MonadThrow (m IO)
+                             , MonadReader c (m IO)
+                             , HasConfig c) => (m IO) a
 
-run :: StubConfig -> KubeState -> MR a -> IO a
+run :: StubConfig -> KubeState -> Effects a -> IO a
 run stubConfig kubeState f = do
   maybeConfig <- loadConfig
   case maybeConfig of

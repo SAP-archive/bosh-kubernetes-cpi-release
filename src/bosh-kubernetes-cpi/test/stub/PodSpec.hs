@@ -27,7 +27,7 @@ import           CPI.Kubernetes.Config
 
 import           CPI.Kubernetes.Resource.Metadata
 import qualified CPI.Kubernetes.Resource.Metadata       as Metadata
-import           CPI.Kubernetes.Resource.Pod            (MonadPod, createPod,
+import           CPI.Kubernetes.Resource.Pod            (Pods, createPod,
                                                          deletePod, getPod,
                                                          newContainer, newPod,
                                                          waitForPod)
@@ -81,7 +81,7 @@ import           Network.HTTP.Types.Status
 import           Servant.Common.Req                     (ServantError (..))
 import           System.Environment
 
-withPod :: (MonadPod m, MonadThrow m, MonadMask m, HasConfig c, MonadReader c m) => Pod -> (Pod -> m a) -> m a
+withPod :: (Pods m, MonadThrow m, MonadMask m, HasConfig c, MonadReader c m) => Pod -> (Pod -> m a) -> m a
 withPod pod action = do
   config <- asks asConfig
   let ns = namespace $ clusterAccess config

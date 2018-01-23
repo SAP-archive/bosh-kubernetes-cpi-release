@@ -10,17 +10,16 @@ import qualified CPI.Base                                      as Base
 
 
 import           CPI.Kubernetes.Config
-import           CPI.Kubernetes.Resource.PersistentVolumeClaim (MonadPVC, getPersistentVolumeClaim,
+import           CPI.Kubernetes.Resource.PersistentVolumeClaim (PVCs, getPersistentVolumeClaim,
                                                                 updatePersistentVolumeClaim)
 import qualified CPI.Kubernetes.Resource.PersistentVolumeClaim as Service
-import           CPI.Kubernetes.Resource.Pod                   (MonadPod,
-                                                                createPod,
+import           CPI.Kubernetes.Resource.Pod                   (Pods, createPod,
                                                                 deletePod,
                                                                 getPod,
                                                                 newPodFrom,
                                                                 waitForPod)
 import qualified CPI.Kubernetes.Resource.Pod                   as Pod
-import           CPI.Kubernetes.Resource.Secret                (MonadSecret,
+import           CPI.Kubernetes.Resource.Secret                (Secrets,
                                                                 createSecret,
                                                                 data',
                                                                 getSecret,
@@ -88,8 +87,8 @@ import           Control.Monad.Reader
 import           Data.Aeson.Lens
 import           Data.Semigroup
 
-import           Control.Exception.Safe
 import           Control.Effect.Class.FileSystem
+import           Control.Exception.Safe
 import           Data.Aeson
 import qualified Data.Aeson                                    as Aeson
 
@@ -98,9 +97,9 @@ attachDisk ::
      , MonadReader c m
      , MonadLog (WithSeverity Text) m
      , FileSystem m
-     , MonadPod m
-     , MonadPVC m
-     , MonadSecret m) =>
+     , Pods m
+     , PVCs m
+     , Secrets m) =>
      Base.VmId
   -> Base.DiskId
   -> m ()

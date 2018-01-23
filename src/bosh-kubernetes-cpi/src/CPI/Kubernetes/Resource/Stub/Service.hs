@@ -50,14 +50,14 @@ import           Data.Text.Encoding                  (decodeUtf8)
 
 
 
+import           Control.Effect.Class.Wait
 import           Control.Effect.Stub
 import           Control.Effect.Stub.Time
 import           Control.Effect.Stub.Wait
-import           Control.Effect.Class.Wait
 
 import qualified GHC.Int                             as GHC
 
-instance (MonadThrow m, Wait m, Monoid w, HasServices s, HasWaitCount w, HasTime s, HasTimeline s) => MonadService (StubT r w s m) where
+instance (MonadThrow m, Wait m, Monoid w, HasServices s, HasWaitCount w, HasTime s, HasTimeline s) => Services (StubT r w s m) where
   createService namespace service = do
     services <- State.gets asServices
     let services' = insert (namespace, service ^. name) service services

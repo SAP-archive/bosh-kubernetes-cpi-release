@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 module CPI.Kubernetes.Resource.PersistentVolumeClaim(
     module PersistentVolumeClaim
-  , MonadPVC(..)
+  , PVCs(..)
   , newPersistentVolumeClaim
   , spec
   , resources
@@ -73,12 +73,12 @@ import           Control.Monad.Reader
 import qualified Control.Monad.State                             as State
 import           Data.Maybe
 
-import           Control.Exception.Safe
-import           Control.Lens
-import           Control.Lens.Operators
 import           Control.Effect.Class.Console
 import           Control.Effect.Class.FileSystem
 import           Control.Effect.Class.Wait
+import           Control.Exception.Safe
+import           Control.Lens
+import           Control.Lens.Operators
 
 import           Control.Monad.Log
 
@@ -93,7 +93,7 @@ import qualified Data.Text                                       as Text
 import           Data.Text.Encoding                              (decodeUtf8)
 import           Servant.Client
 
-class (Monad m) => MonadPVC m where
+class (Monad m) => PVCs m where
   createPersistentVolumeClaim :: Text -> PersistentVolumeClaim -> m PersistentVolumeClaim
   listPersistentVolumeClaim :: Text -> m PersistentVolumeClaimList
   getPersistentVolumeClaim :: Text -> Text -> m (Maybe PersistentVolumeClaim)
@@ -101,7 +101,7 @@ class (Monad m) => MonadPVC m where
   deletePersistentVolumeClaim :: Text -> Text -> m PersistentVolumeClaim
   waitForPersistentVolumeClaim :: Text -> Text -> Text -> (Maybe PersistentVolumeClaim -> Bool) -> m (Maybe PersistentVolumeClaim)
 
-instance (MonadIO m, MonadThrow m, MonadCatch m, Console m, FileSystem m, Wait m, HasConfig c) => MonadPVC (Resource c m) where
+instance (MonadIO m, MonadThrow m, MonadCatch m, Console m, FileSystem m, Wait m, HasConfig c) => PVCs (Resource c m) where
 
   createPersistentVolumeClaim namespace pvc = do
     logDebug $ "Creating PersistentVolumeClaim '" <> (decodeUtf8.toStrict.encode) pvc <> "'"

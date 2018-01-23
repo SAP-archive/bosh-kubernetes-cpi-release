@@ -69,8 +69,8 @@ import           Control.Monad.Reader
 import           Data.Aeson.Lens
 import           Data.Semigroup
 
-import           Control.Exception.Safe
 import           Control.Effect.Class.FileSystem
+import           Control.Exception.Safe
 import           Data.Aeson
 import qualified Data.Aeson                                    as Aeson
 
@@ -79,7 +79,7 @@ createDisk ::
      , MonadReader c m
      , MonadLog (WithSeverity Text) m
      , FileSystem m
-     , MonadPVC m) =>
+     , PVCs m) =>
      Integer
   -> Base.DiskProperties
   -> Base.VmId

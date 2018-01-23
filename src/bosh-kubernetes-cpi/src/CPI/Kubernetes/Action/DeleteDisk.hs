@@ -79,7 +79,7 @@ deleteDisk ::
      , MonadReader c m
      , MonadLog (WithSeverity Text) m
      , FileSystem m
-     , MonadPVC m) =>
+     , PVCs m) =>
      Base.DiskId
   -> m ()
 deleteDisk diskId = do

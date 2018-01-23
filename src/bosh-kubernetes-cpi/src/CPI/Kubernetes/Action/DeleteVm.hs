@@ -10,14 +10,14 @@ import CPI.Kubernetes.Action.Common
 import qualified CPI.Base                                 as Base
 import           CPI.Kubernetes.Config
 import           CPI.Kubernetes.Resource.Metadata         as Metadata
-import           CPI.Kubernetes.Resource.Pod              (MonadPod, deletePod,
+import           CPI.Kubernetes.Resource.Pod              (Pods, deletePod,
                                                            waitForPod)
 import qualified CPI.Kubernetes.Resource.Pod              as Pod
-import           CPI.Kubernetes.Resource.Secret           (MonadSecret,
+import           CPI.Kubernetes.Resource.Secret           (Secrets,
                                                            createSecret, deleteSecret, waitForSecret, data',
                                                            newSecret)
 import qualified CPI.Kubernetes.Resource.Secret           as Secret
-import           CPI.Kubernetes.Resource.Service          (MonadService, getService, listService,
+import           CPI.Kubernetes.Resource.Service          (Services, getService, listService,
                                                            updateService)
 import qualified CPI.Kubernetes.Resource.Service          as Service
 
@@ -84,9 +84,9 @@ deleteVm ::
      , MonadReader c m
      , MonadLog (WithSeverity Text) m
      , FileSystem m
-     , MonadPod m
-     , MonadService m
-     , MonadSecret m
+     , Pods m
+     , Services m
+     , Secrets m
      , MonadCatch m) =>
      Base.VmId
   -> m ()
@@ -113,7 +113,7 @@ disassociate ::
    , MonadReader c m
    , MonadLog (WithSeverity Text) m
    , FileSystem m
-   , MonadService m) => Base.AgentId -> m ()
+   , Services m) => Base.AgentId -> m ()
 disassociate agentId = do
   config <- asks asConfig
   let ns = config & clusterAccess & namespace
