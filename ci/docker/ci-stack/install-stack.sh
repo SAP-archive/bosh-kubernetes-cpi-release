@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-STACK_VERSION=${STACK_VERSION:="1.5.1"}
+STACK_VERSION=${STACK_VERSION:="1.6.3"}
 STACK_URL=https://github.com/commercialhaskell/stack/releases/download/v${STACK_VERSION}/stack-${STACK_VERSION}-linux-x86_64-static.tar.gz
 
 apt-get install -y \
