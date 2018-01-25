@@ -6,19 +6,34 @@ ghc/ghc-8.2.2-x86_64-apple-darwin.tar.xz:
   size: 113941296
   object_id: fc7118ba-f27a-41bd-4a1a-e951046dbce5
   sha: 85b78cbedbc02514934fb3c1a0e546c795f4b4de
+ghc/ghc-8.2.2-x86_64-apple-darwin.tar.xz.sig:
+  size: 586
+  sha: 780339db547b4f54b2a007290e4c93a8bb258220
 ghc/ghc-8.2.2-x86_64-deb8-linux.tar.xz:
   size: 127028808
   object_id: d1a9b37f-0e88-4aad-505f-4d2c7af500ec
   sha: 7d0312d0ad3e5c5602e1102d6454ff390e961851
+ghc/ghc-8.2.2-x86_64-deb8-linux.tar.xz.sig:
+  size: 586
+  sha: 8e7abe1a0b4047eff542eac84167b41caba0aaeb
 gmp/gmp-5.1.3.tar.xz:
   size: 1818812
   object_id: 59a99964-4459-4c6a-561a-3bfc41a2d132
   sha: 12cfe0911d64fcbd85835df9ddc18c99af8f9a45
+gmp/gmp-5.1.3.tar.xz.sig:
+  size: 351
+  sha: 3a0b45e84071b21d9f47f956608759671baca8dc
 stack/stack-1.6.3-linux-x86_64-static.tar.gz:
   size: 13256150
   object_id: 72494560-1f91-4d83-7773-48a51509fde8
   sha: 53d8cfd62b175036a5af2091d3f6f00e2ecaecae
+stack/stack-1.6.3-linux-x86_64-static.tar.gz.asc:
+  size: 488
+  sha: 87fdbf8e8d239f5015e508ba84b0354f3708c17e
 stack/stack-1.6.3-osx-x86_64.tar.gz:
   size: 14848852
   object_id: 8cf02b0e-3155-41ba-4d17-7883f594e3f1
   sha: 773a49655c27cf5edab94299a39e556a1372eb90
+stack/stack-1.6.3-osx-x86_64.tar.gz.asc:
+  size: 488
+  sha: 8881580d8d819339e99e9ec9e71d1839794b8f66
